@@ -7,6 +7,6 @@ export async function GET() {
     
     return NextResponse.json(data)
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch tickers' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to fetch tickers:' + error }, { status: 500 })
   }
 } 
