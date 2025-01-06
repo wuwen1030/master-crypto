@@ -12,7 +12,7 @@ import {
 } from 'recharts'
 
 interface FundingRateChartProps {
-  data: { date: string; [key: string]: number }[]
+  data: (Record<string, number> & { date: string })[]
   lines: string[]
 }
 

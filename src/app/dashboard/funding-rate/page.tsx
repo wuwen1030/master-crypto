@@ -39,7 +39,7 @@ interface FundingRate {
 export default function FundingDatePage() {
   const [tickers, setTickers] = useState<Ticker[]>([])
   const [selectedPairs, setSelectedPairs] = useState<string[]>([])
-  const [rates, setRates] = useState<Record<string, string | number>[]>([])
+  const [rates, setRates] = useState<(Record<'date', string> & Record<string, number>)[]>([])
   const [dateRange, setDateRange] = useState<DateRange>({
     from: addDays(new Date(), -7),
     to: new Date(),
@@ -86,14 +86,14 @@ export default function FundingDatePage() {
     results: { symbol: string; rates: FundingRate[] }[],
     dateRange: DateRange
   ) => {
-    const dailySums = new Map<string, Record<string, string | number>>()
+    const dailySums = new Map<string, Record<'date', string> & Record<string, number>>()
 
     results.forEach(({ symbol, rates }) => {
       rates.forEach((rate) => {
         const date = new Date(rate.timestamp).toISOString().split('T')[0]
         
         if (!dailySums.has(date)) {
-          dailySums.set(date, { date })
+          dailySums.set(date, { date } as Record<'date', string> & Record<string, number>)
         }
         
         const dayData = dailySums.get(date)!
@@ -101,16 +101,16 @@ export default function FundingDatePage() {
           dayData[symbol] = 0
         }
         
-        dayData[symbol] = (dayData[symbol] as number) + rate.relativeFundingRate
+        dayData[symbol] = dayData[symbol] + rate.relativeFundingRate
       })
     })
 
     return Array.from(dailySums.values())
       .filter((d) => {
-        const date = new Date(d.date as string)
+        const date = new Date(d.date)
         return date >= dateRange.from! && date <= dateRange.to!
       })
-      .sort((a, b) => new Date(a.date as string).getTime() - new Date(b.date as string).getTime())
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
   }
 
   const filteredSymbols = useMemo(() => {
