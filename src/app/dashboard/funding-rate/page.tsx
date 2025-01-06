@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { DateRange } from 'react-day-picker'
 import { addDays } from 'date-fns'
 import { getTickers, getFundingRates } from '@/lib/kraken'
@@ -36,6 +36,12 @@ interface FundingRate {
   relativeFundingRate: number
 }
 
+interface Stats {
+  symbol: string
+  total: number
+  average: number
+}
+
 export default function FundingDatePage() {
   const [tickers, setTickers] = useState<Ticker[]>([])
   const [selectedPairs, setSelectedPairs] = useState<string[]>([])
@@ -46,6 +52,7 @@ export default function FundingDatePage() {
   })
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false)
   const [favoriteSymbols, setFavoriteSymbols] = useState<string[]>([])
+  const [stats, setStats] = useState<Stats[]>([])
 
   useEffect(() => {
     getTickers().then((data) => {
@@ -55,6 +62,26 @@ export default function FundingDatePage() {
       setTickers(perpetuals)
     })
   }, [])
+
+  const calculateStats = useCallback((data: (Record<'date', string> & Record<string, number>)[]) => {
+    return selectedPairs.map(symbol => {
+      let total = 0
+      let count = 0
+      
+      data.forEach(item => {
+        if (symbol in item) {
+          total += item[symbol]
+          count++
+        }
+      })
+
+      return {
+        symbol,
+        total: parseFloat(total.toFixed(4)),
+        average: parseFloat((total / (count || 1)).toFixed(4))
+      }
+    })
+  }, [selectedPairs])
 
   useEffect(() => {
     if (selectedPairs.length > 0) {
@@ -68,9 +95,10 @@ export default function FundingDatePage() {
       ).then((results) => {
         const formattedData = formatChartData(results, dateRange)
         setRates(formattedData)
+        setStats(calculateStats(formattedData))
       })
     }
-  }, [selectedPairs, dateRange])
+  }, [selectedPairs, dateRange, calculateStats])
 
   useEffect(() => {
     setFavoriteSymbols(getFavoriteSymbols())
@@ -209,6 +237,23 @@ export default function FundingDatePage() {
           </PopoverContent>
         </Popover>
       </div>
+
+      {stats.length > 0 && (
+        <div className="mt-4 space-y-2">
+          <h3 className="text-lg font-semibold">统计信息</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {stats.map((stat) => (
+              <div key={stat.symbol} className="p-4 border rounded-lg">
+                <div className="font-medium">{stat.symbol}</div>
+                <div className="text-sm text-gray-600">
+                  <div>累计: {(stat.total * 100).toFixed(4)}%</div>
+                  <div>平均: {(stat.average * 100).toFixed(4)}%</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="mt-6">
         {rates.length > 0 && (
