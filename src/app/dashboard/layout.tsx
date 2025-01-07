@@ -1,25 +1,38 @@
+"use client";
+import React from "react";
+import { usePathname } from "next/navigation";
 import { ModeToggle } from "@/components/mode-toggle";
-import { AppSidebar } from "../../components/app-sidebar"
+import { AppSidebar } from "../../components/app-sidebar";
 import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
-  BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb"
-import { Separator } from "@/components/ui/separator"
+} from "@/components/ui/breadcrumb";
+import { Separator } from "@/components/ui/separator";
 import {
   SidebarInset,
   SidebarProvider,
   SidebarTrigger,
-} from "@/components/ui/sidebar"
+} from "@/components/ui/sidebar";
+
+function generateBreadcrumbs(pathname: string) {
+  const paths = pathname.split('/').filter(Boolean);
+  return paths.map((path, index) => ({
+    name: path.charAt(0).toUpperCase() + path.slice(1),
+    href: '/' + paths.slice(0, index + 1).join('/')
+  }));
+}
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const pathname = usePathname();
+  const breadcrumbs = generateBreadcrumbs(pathname);
+
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -30,15 +43,18 @@ export default function RootLayout({
             <Separator orientation="vertical" className="mr-2 h-4" />
             <Breadcrumb>
               <BreadcrumbList>
-                <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbLink href="#">
-                    Building Your Application
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator className="hidden md:block" />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Data Fetching</BreadcrumbPage>
-                </BreadcrumbItem>
+                {breadcrumbs.map((breadcrumb, index) => (
+                  <React.Fragment key={breadcrumb.href}>
+                    <BreadcrumbItem>
+                      <BreadcrumbLink href={breadcrumb.href}>
+                        {breadcrumb.name}
+                      </BreadcrumbLink>
+                    </BreadcrumbItem>
+                    {index < breadcrumbs.length - 1 && (
+                      <BreadcrumbSeparator />
+                    )}
+                  </React.Fragment>
+                ))}
               </BreadcrumbList>
             </Breadcrumb>
           </div>
