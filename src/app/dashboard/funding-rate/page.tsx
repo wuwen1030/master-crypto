@@ -24,6 +24,11 @@ import { format } from 'date-fns'
 import { Star, StarOff } from 'lucide-react'
 import { getFavoriteSymbols, toggleFavoriteSymbol, getShowOnlyFavorites, setShowOnlyFavorites as saveShowOnlyFavorites } from '@/lib/utils'
 import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 interface Ticker {
   symbol: string
@@ -178,35 +183,44 @@ export default function FundingDatePage() {
               onCheckedChange={(checked) => handleShowOnlyFavoritesChange(checked as boolean)}
             />
             <label htmlFor="showFavorites" className="text-sm whitespace-nowrap">
-              只显示收藏
+              Show Favorites Only
             </label>
           </div>
 
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="icon">
-                <Star className="h-4 w-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[200px] p-2">
-              <div className="space-y-1 max-h-[300px] overflow-y-auto">
-                {tickers.map((ticker) => (
-                  <button
-                    key={ticker.symbol}
-                    onClick={() => handleToggleFavorite(ticker.symbol)}
-                    className="flex items-center gap-2 w-full hover:bg-gray-100 p-1 rounded text-left"
-                  >
-                    {favoriteSymbols.includes(ticker.symbol) ? (
-                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    ) : (
-                      <StarOff className="h-4 w-4" />
-                    )}
-                    <span className="text-sm">{ticker.symbol}</span>
-                  </button>
-                ))}
+          <Tooltip delayDuration={300}>
+            <TooltipTrigger asChild>
+              <div> {/* Add a wrapper div */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="icon">
+                      <Star className="h-4 w-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[200px] p-2">
+                    <div className="space-y-1 max-h-[300px] overflow-y-auto">
+                      {tickers.map((ticker) => (
+                        <button
+                          key={ticker.symbol}
+                          onClick={() => handleToggleFavorite(ticker.symbol)}
+                          className="flex items-center gap-2 w-full hover:bg-gray-100 p-1 rounded text-left"
+                        >
+                          {favoriteSymbols.includes(ticker.symbol) ? (
+                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                          ) : (
+                            <StarOff className="h-4 w-4" />
+                          )}
+                          <span className="text-sm">{ticker.symbol}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
-            </PopoverContent>
-          </Popover>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              <p>Manage favorites</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
 
         <Popover>
@@ -240,14 +254,14 @@ export default function FundingDatePage() {
 
       {stats.length > 0 && (
         <div className="mt-4 space-y-2">
-          <h3 className="text-lg font-semibold">统计信息</h3>
+          <h3 className="text-lg font-semibold">Statistics</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {stats.map((stat) => (
               <div key={stat.symbol} className="p-4 border rounded-lg">
                 <div className="font-medium">{stat.symbol}</div>
                 <div className="text-sm text-gray-600">
-                  <div>累计: {(stat.total * 100).toFixed(4)}%</div>
-                  <div>平均: {(stat.average * 100).toFixed(4)}%</div>
+                  <div>Total: {(stat.total * 100).toFixed(4)}%</div>
+                  <div>Average: {(stat.average * 100).toFixed(4)}%</div>
                 </div>
               </div>
             ))}
