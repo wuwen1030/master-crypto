@@ -31,7 +31,6 @@ Master Crypto is a web application that allows users to:
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/master-crypto.git
 cd master-crypto
 ```
 
