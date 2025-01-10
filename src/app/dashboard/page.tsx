@@ -1,8 +1,5 @@
+import { redirect } from 'next/navigation'
 
-export default function Page() {
-  return (
-    <div className="flex w-full h-full items-center justify-center">
-      <h1 className="text-2xl font-bold">Crypto Master</h1>
-  </div>
-  )
+export default function DashboardPage() {
+  redirect('/dashboard/funding-rate')
 }
