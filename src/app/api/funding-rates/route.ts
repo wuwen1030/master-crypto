@@ -1,8 +1,5 @@
 import { NextResponse } from 'next/server'
 
-// 设置缓存配置
-export const revalidate = 300 // 5分钟缓存
-
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
@@ -13,13 +10,7 @@ export async function GET(request: Request) {
     }
 
     const response = await fetch(
-      `https://futures.kraken.com/derivatives/api/v4/historicalfundingrates?symbol=${symbol}`,
-      {
-        // 添加缓存配置
-        next: {
-          revalidate: 300 // 5分钟缓存
-        }
-      }
+      `https://futures.kraken.com/derivatives/api/v4/historicalfundingrates?symbol=${symbol}`
     )
     
     if (!response.ok) {
@@ -28,12 +19,7 @@ export async function GET(request: Request) {
     
     const data = await response.json()
     
-    // 设置缓存控制头
-    return NextResponse.json(data, {
-      headers: {
-        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
-      },
-    })
+    return NextResponse.json(data)
   } catch (error) {
     console.error('Funding rates fetch error:', error)
     return NextResponse.json(
@@ -41,4 +27,4 @@ export async function GET(request: Request) {
       { status: 500 }
     )
   }
-} 
+}
