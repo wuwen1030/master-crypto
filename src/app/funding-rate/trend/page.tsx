@@ -113,7 +113,7 @@ export default function FundingDatePage() {
 
     results.forEach(({ symbol, rates }) => {
       rates.forEach((rate) => {
-        const date = new Date(rate.timestamp).toISOString().split('T')[0]
+        const date = new Date(rate.timestamp).toLocaleDateString('zh-CN')
         
         if (!dailySums.has(date)) {
           dailySums.set(date, { date } as Record<'date', string> & Record<string, number>)
@@ -262,7 +262,7 @@ export default function FundingDatePage() {
       <div className="mt-6">
         {rates.length > 0 && (
           <FundingRateChart
-            data={rates}
+            data={rates as []}
             lines={selectedPairs}
           />
         )}

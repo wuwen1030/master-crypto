@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { getTickers, getFundingRates } from '@/lib/kraken'
-import { Ticker, FundingRate } from '@/types/kraken'
+import { Ticker } from '@/types/kraken'
 import {
   Table,
   TableBody,
@@ -68,11 +68,6 @@ interface TickerWithFunding extends Ticker {
 type SortField = 'symbol' | 'fundingRate' | 'volume'
 type SortOrder = 'asc' | 'desc'
 
-interface ChartDataPoint {
-  date: string
-  [key: string]: number | string
-}
-
 export default function FundingRatePage() {
   const [timeRange, setTimeRange] = useState('24h')
   const [tickers, setTickers] = useState<TickerWithFunding[]>([])
@@ -80,7 +75,7 @@ export default function FundingRatePage() {
   const [sortField, setSortField] = useState<SortField>('symbol')
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc')
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null)
-  const [historicalRates, setHistoricalRates] = useState<ChartDataPoint[]>([])
+  const [historicalRates, setHistoricalRates] = useState<[]>([])
   const [showModal, setShowModal] = useState(false)
 
   const handleSort = (field: SortField) => {
@@ -116,23 +111,23 @@ export default function FundingRatePage() {
         const perpetualTickers = response.tickers
           .filter(ticker => ticker.tag === 'perpetual')
           .filter(ticker => ticker.volumeQuote >= 1000) // 过滤掉交易量小于 1K 的交易对
-        
+
         // 获取每个交易对的资金费率历史并计算所有时间周期的累积值
         const tickersWithFunding = await Promise.all(
           perpetualTickers.map(async (ticker) => {
             try {
               const fundingResponse = await getFundingRates(ticker.symbol)
               const now = Date.now()
-              
+
               // 计算所有时间周期的累积资金费率
               const fundingRates = Object.entries(timeRangeToHours).reduce((acc, [range, hours]) => {
                 const startTime = now - hours * 60 * 60 * 1000
-                
+
                 // 过滤出指定时间范围内的费率数据
                 const relevantRates = fundingResponse.rates.filter(
                   rate => new Date(rate.timestamp).getTime() >= startTime
                 )
-                
+
                 // 计算累积资金费率
                 const cumulativeRate = relevantRates.reduce(
                   (sum, rate) => sum + rate.relativeFundingRate,
@@ -182,13 +177,22 @@ export default function FundingRatePage() {
 
       const rates = response.rates
         .filter(rate => new Date(rate.timestamp).getTime() >= startTime)
-        .map(rate => ({
-          date: rate.timestamp,
-          fundingRate: rate.relativeFundingRate
-        }))
+        .map(rate => {
+          const chartData = {
+            date: new Date(rate.timestamp).toLocaleTimeString('zh-CN', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit'
+            }),
+            fundingRate: rate.relativeFundingRate
+          }
+          return chartData
+        })
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
 
-      setHistoricalRates(rates)
+      setHistoricalRates(rates as [])
       setSelectedSymbol(symbol.replace('PF_', '').replace('USD', ''))
       setShowModal(true)
     } catch (error) {
@@ -267,7 +271,7 @@ export default function FundingRatePage() {
               </TableRow>
             ) : (
               sortedTickers.map((ticker) => (
-                <TableRow 
+                <TableRow
                   key={ticker.symbol}
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={() => handleRowClick(ticker.symbol)}
@@ -293,7 +297,7 @@ export default function FundingRatePage() {
           </DialogHeader>
           <div className="py-4">
             <FundingRateChart
-              data={historicalRates}
+              data={historicalRates as []}
               lines={['fundingRate']}
             />
           </div>
