@@ -1,3 +1,5 @@
+import { TickerResponse, FundingRateResponse } from '../types/kraken'
+
 export interface Ticker {
   symbol: string
   pair: string
@@ -8,18 +10,6 @@ export interface Ticker {
 export interface FundingRate {
   timestamp: string
   relativeFundingRate: number
-}
-
-export interface TickerResponse {
-  result: string
-  serverTime: string
-  tickers: Ticker[]
-}
-
-export interface FundingRateResponse {
-  result: string
-  serverTime: string
-  rates: FundingRate[]
 }
 
 export async function getTickers(): Promise<TickerResponse> {

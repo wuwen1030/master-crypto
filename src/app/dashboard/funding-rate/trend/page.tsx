@@ -29,17 +29,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-
-interface Ticker {
-  symbol: string
-  pair: string
-  tag: string
-}
-
-interface FundingRate {
-  timestamp: string
-  relativeFundingRate: number
-}
+import { Ticker, FundingRate } from '@/types/kraken'
 
 interface Stats {
   symbol: string
