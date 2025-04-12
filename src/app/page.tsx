@@ -21,7 +21,7 @@ export default function Home() {
             </p>
             <div className="flex gap-4">
               <a
-                href="/dashboard"
+                href="/funding-rate"
                 className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition-colors"
               >
                 Get Started
