@@ -18,8 +18,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { ArrowUpDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { FundingRateChart } from '@/components/ui/line-chart'
 
 const timeOptions = [
   { value: '1h', label: '1小时' },
@@ -61,12 +68,20 @@ interface TickerWithFunding extends Ticker {
 type SortField = 'symbol' | 'fundingRate' | 'volume'
 type SortOrder = 'asc' | 'desc'
 
+interface ChartDataPoint {
+  date: string
+  [key: string]: number | string
+}
+
 export default function FundingRatePage() {
   const [timeRange, setTimeRange] = useState('24h')
   const [tickers, setTickers] = useState<TickerWithFunding[]>([])
   const [loading, setLoading] = useState(true)
   const [sortField, setSortField] = useState<SortField>('symbol')
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc')
+  const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null)
+  const [historicalRates, setHistoricalRates] = useState<ChartDataPoint[]>([])
+  const [showModal, setShowModal] = useState(false)
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -158,6 +173,29 @@ export default function FundingRatePage() {
     fetchData()
   }, []) // 只在组件挂载时获取一次数据
 
+  const handleRowClick = async (symbol: string) => {
+    try {
+      const response = await getFundingRates(symbol)
+      const now = Date.now()
+      const hours = timeRangeToHours[timeRange as keyof typeof timeRangeToHours]
+      const startTime = now - hours * 60 * 60 * 1000
+
+      const rates = response.rates
+        .filter(rate => new Date(rate.timestamp).getTime() >= startTime)
+        .map(rate => ({
+          date: rate.timestamp,
+          fundingRate: rate.relativeFundingRate
+        }))
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+
+      setHistoricalRates(rates)
+      setSelectedSymbol(symbol.replace('PF_', '').replace('USD', ''))
+      setShowModal(true)
+    } catch (error) {
+      console.error('Error fetching historical rates:', error)
+    }
+  }
+
   return (
     <div className="px-4">
       <div className="flex flex-row items-center justify-between mb-6">
@@ -229,7 +267,11 @@ export default function FundingRatePage() {
               </TableRow>
             ) : (
               sortedTickers.map((ticker) => (
-                <TableRow key={ticker.symbol}>
+                <TableRow 
+                  key={ticker.symbol}
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => handleRowClick(ticker.symbol)}
+                >
                   <TableCell className="font-medium">{ticker.symbol.replace('PF_', '').replace('USD', '')}</TableCell>
                   <TableCell>
                     <span className={ticker.fundingRates[timeRange] >= 0 ? 'text-red-500' : 'text-green-500'}>
@@ -243,6 +285,20 @@ export default function FundingRatePage() {
           </TableBody>
         </Table>
       </div>
+
+      <Dialog open={showModal} onOpenChange={setShowModal}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>{selectedSymbol} 资金费率历史</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <FundingRateChart
+              data={historicalRates}
+              lines={['fundingRate']}
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 } 
