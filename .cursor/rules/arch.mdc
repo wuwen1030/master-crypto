@@ -1,0 +1,8 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# 技术选型
+- Next.js + TypeScript + shadcn ui
