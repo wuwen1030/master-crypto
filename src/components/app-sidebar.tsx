@@ -2,7 +2,8 @@
 
 import * as React from "react"
 import {
-  LineChart
+  LineChart,
+  LayoutDashboard,
 } from "lucide-react"
 
 import {
@@ -22,10 +23,15 @@ import Link from "next/link"
 
 const items = [
   {
-    title: "Fundating Rate",
-    url: "/dashboard/funding-rate",
-    icon: LineChart,
+    title: "Overview",
+    url: "/funding-rate",
+    icon: LayoutDashboard,
   },
+  {
+    title: "Trend",
+    url: "/funding-rate/trend",
+    icon: LineChart,
+  }
 ]
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {

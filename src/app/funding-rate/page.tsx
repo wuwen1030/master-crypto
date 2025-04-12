@@ -18,7 +18,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowUpDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -158,85 +157,84 @@ export default function FundingRatePage() {
   }, []) // 只在组件挂载时获取一次数据
 
   return (
-    <div className="container mx-auto py-10">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-2xl font-bold">资金费率</CardTitle>
-          <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="选择时间范围" />
-            </SelectTrigger>
-            <SelectContent>
-              {timeOptions.map(option => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
+    <div className="px-4">
+      <div className="flex flex-row items-center justify-between mb-6">
+        <h1 className="text-xl md:text-2xl font-bold">资金费率</h1>
+        <Select value={timeRange} onValueChange={setTimeRange}>
+          <SelectTrigger className="w-[120px] md:w-[180px]">
+            <SelectValue placeholder="选择时间范围" />
+          </SelectTrigger>
+          <SelectContent>
+            {timeOptions.map(option => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="rounded-md border bg-card">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[200px]">
+                <Button
+                  variant="ghost"
+                  onClick={() => handleSort('symbol')}
+                  className="flex items-center gap-2 hover:bg-transparent"
+                >
+                  交易对
+                  <ArrowUpDown className="h-4 w-4" />
+                </Button>
+              </TableHead>
+              <TableHead>
+                <Button
+                  variant="ghost"
+                  onClick={() => handleSort('fundingRate')}
+                  className="flex items-center gap-2 hover:bg-transparent"
+                >
+                  累计资金费率
+                  <ArrowUpDown className="h-4 w-4" />
+                </Button>
+              </TableHead>
+              <TableHead>
+                <Button
+                  variant="ghost"
+                  onClick={() => handleSort('volume')}
+                  className="flex items-center gap-2 hover:bg-transparent"
+                >
+                  24小时交易量
+                  <ArrowUpDown className="h-4 w-4" />
+                </Button>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
               <TableRow>
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort('symbol')}
-                    className="flex items-center gap-1"
-                  >
-                    交易对
-                    <ArrowUpDown className="h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort('fundingRate')}
-                    className="flex items-center gap-1"
-                  >
-                    累计资金费率
-                    <ArrowUpDown className="h-4 w-4" />
-                  </Button>
-                </TableHead>
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    onClick={() => handleSort('volume')}
-                    className="flex items-center gap-1"
-                  >
-                    24小时交易量
-                    <ArrowUpDown className="h-4 w-4" />
-                  </Button>
-                </TableHead>
+                <TableCell colSpan={3} className="text-center">加载中...</TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={3} className="text-center">加载中...</TableCell>
+            ) : sortedTickers.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={3} className="text-center">暂无数据</TableCell>
+              </TableRow>
+            ) : (
+              sortedTickers.map((ticker) => (
+                <TableRow key={ticker.symbol}>
+                  <TableCell>{ticker.symbol.replace('PF_', '').replace('USD', '')}</TableCell>
+                  <TableCell>
+                    <span className={ticker.fundingRates[timeRange] >= 0 ? 'text-red-500' : 'text-green-500'}>
+                      {(ticker.fundingRates[timeRange] * 100).toFixed(4)}%
+                    </span>
+                  </TableCell>
+                  <TableCell>{formatVolume(ticker.volumeQuote)}</TableCell>
                 </TableRow>
-              ) : sortedTickers.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={3} className="text-center">暂无数据</TableCell>
-                </TableRow>
-              ) : (
-                sortedTickers.map((ticker) => (
-                  <TableRow key={ticker.symbol}>
-                    <TableCell>{ticker.symbol.replace('PF_', '').replace('USD', '')}</TableCell>
-                    <TableCell>
-                      <span className={ticker.fundingRates[timeRange] >= 0 ? 'text-red-500' : 'text-green-500'}>
-                        {(ticker.fundingRates[timeRange] * 100).toFixed(4)}%
-                      </span>
-                    </TableCell>
-                    <TableCell>{formatVolume(ticker.volumeQuote)}</TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   )
 } 

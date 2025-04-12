@@ -5,4 +5,4 @@ alwaysApply: true
 ---
 
 # 技术选型
-- Next.js + TypeScript + shadcn ui
+- Next.js + TypeScript + shadcn ui + tailwindcss
