@@ -98,7 +98,9 @@ export default function FundingRatePage() {
       try {
         setLoading(true)
         const response = await getTickers()
-        const perpetualTickers = response.tickers.filter(ticker => ticker.tag === 'perpetual')
+        const perpetualTickers = response.tickers
+          .filter(ticker => ticker.tag === 'perpetual')
+          .filter(ticker => ticker.volumeQuote >= 1000) // 过滤掉交易量小于 1K 的交易对
         
         // 获取每个交易对的资金费率历史并计算所有时间周期的累积值
         const tickersWithFunding = await Promise.all(
@@ -159,7 +161,7 @@ export default function FundingRatePage() {
   return (
     <div className="px-4">
       <div className="flex flex-row items-center justify-between mb-6">
-        <h1 className="text-xl md:text-2xl font-bold">资金费率</h1>
+        <h1 className="text-xl md:text-2xl font-bold">资金费率总览</h1>
         <Select value={timeRange} onValueChange={setTimeRange}>
           <SelectTrigger className="w-[120px] md:w-[180px]">
             <SelectValue placeholder="选择时间范围" />
@@ -182,30 +184,36 @@ export default function FundingRatePage() {
                 <Button
                   variant="ghost"
                   onClick={() => handleSort('symbol')}
-                  className="flex items-center gap-2 hover:bg-transparent"
+                  className="h-auto px-0 font-medium hover:bg-transparent"
                 >
-                  交易对
-                  <ArrowUpDown className="h-4 w-4" />
+                  <div className="flex items-center gap-2">
+                    {`交易对 (${tickers.length})`}
+                    <ArrowUpDown className="h-4 w-4" />
+                  </div>
                 </Button>
               </TableHead>
               <TableHead>
                 <Button
                   variant="ghost"
                   onClick={() => handleSort('fundingRate')}
-                  className="flex items-center gap-2 hover:bg-transparent"
+                  className="h-auto px-0 font-medium hover:bg-transparent"
                 >
-                  累计资金费率
-                  <ArrowUpDown className="h-4 w-4" />
+                  <div className="flex items-center gap-2">
+                    累计资金费率
+                    <ArrowUpDown className="h-4 w-4" />
+                  </div>
                 </Button>
               </TableHead>
               <TableHead>
                 <Button
                   variant="ghost"
                   onClick={() => handleSort('volume')}
-                  className="flex items-center gap-2 hover:bg-transparent"
+                  className="h-auto px-0 font-medium hover:bg-transparent"
                 >
-                  24小时交易量
-                  <ArrowUpDown className="h-4 w-4" />
+                  <div className="flex items-center gap-2">
+                    24小时交易量
+                    <ArrowUpDown className="h-4 w-4" />
+                  </div>
                 </Button>
               </TableHead>
             </TableRow>
@@ -213,7 +221,7 @@ export default function FundingRatePage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={3} className="text-center">加载中...</TableCell>
+                <TableCell colSpan={3} className="text-center">加载中...（数据量大，请耐心等待）</TableCell>
               </TableRow>
             ) : sortedTickers.length === 0 ? (
               <TableRow>
@@ -222,7 +230,7 @@ export default function FundingRatePage() {
             ) : (
               sortedTickers.map((ticker) => (
                 <TableRow key={ticker.symbol}>
-                  <TableCell>{ticker.symbol.replace('PF_', '').replace('USD', '')}</TableCell>
+                  <TableCell className="font-medium">{ticker.symbol.replace('PF_', '').replace('USD', '')}</TableCell>
                   <TableCell>
                     <span className={ticker.fundingRates[timeRange] >= 0 ? 'text-red-500' : 'text-green-500'}>
                       {(ticker.fundingRates[timeRange] * 100).toFixed(4)}%
