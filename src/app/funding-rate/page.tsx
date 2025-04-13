@@ -27,6 +27,14 @@ import {
 import { ArrowUpDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { FundingRateChart } from '@/components/ui/line-chart'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 
 const timeOptions = [
   { value: '1h', label: '1小时' },
@@ -77,6 +85,8 @@ export default function FundingRatePage() {
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null)
   const [historicalRates, setHistoricalRates] = useState<[]>([])
   const [showModal, setShowModal] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 50
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -102,6 +112,11 @@ export default function FundingRatePage() {
     }
     return sortOrder === 'asc' ? comparison : -comparison
   })
+
+  const totalPages = Math.ceil(sortedTickers.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const currentTickers = sortedTickers.slice(startIndex, endIndex)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -270,7 +285,7 @@ export default function FundingRatePage() {
                 <TableCell colSpan={3} className="text-center">暂无数据</TableCell>
               </TableRow>
             ) : (
-              sortedTickers.map((ticker) => (
+              currentTickers.map((ticker) => (
                 <TableRow
                   key={ticker.symbol}
                   className="cursor-pointer hover:bg-muted/50"
@@ -289,6 +304,35 @@ export default function FundingRatePage() {
           </TableBody>
         </Table>
       </div>
+
+      {!loading && sortedTickers.length > 0 && (
+        <div className="flex justify-center mt-4">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious 
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                />
+              </PaginationItem>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <PaginationItem key={page}>
+                  <PaginationLink
+                    onClick={() => setCurrentPage(page)}
+                    isActive={currentPage === page}
+                  >
+                    {page}
+                  </PaginationLink>
+                </PaginationItem>
+              ))}
+              <PaginationItem>
+                <PaginationNext
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+        </div>
+      )}
 
       <Dialog open={showModal} onOpenChange={setShowModal}>
         <DialogContent className="max-w-3xl">
