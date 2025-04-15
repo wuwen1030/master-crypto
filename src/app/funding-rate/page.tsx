@@ -24,7 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { ArrowUpDown } from "lucide-react"
+import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { FundingRateChart } from '@/components/ui/line-chart'
 import {
@@ -237,7 +237,8 @@ export default function FundingRatePage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[200px]">
+              <TableHead>序号</TableHead>
+              <TableHead>
                 <Button
                   variant="ghost"
                   onClick={() => handleSort('symbol')}
@@ -245,7 +246,9 @@ export default function FundingRatePage() {
                 >
                   <div className="flex items-center gap-2">
                     {`交易对 (${tickers.length})`}
-                    <ArrowUpDown className="h-4 w-4" />
+                    {sortField === 'symbol' ? (
+                      sortOrder === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                    ) : <ArrowUpDown className="h-4 w-4" />}
                   </div>
                 </Button>
               </TableHead>
@@ -257,7 +260,9 @@ export default function FundingRatePage() {
                 >
                   <div className="flex items-center gap-2">
                     累计资金费率
-                    <ArrowUpDown className="h-4 w-4" />
+                    {sortField === 'fundingRate' ? (
+                      sortOrder === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                    ) : <ArrowUpDown className="h-4 w-4" />}
                   </div>
                 </Button>
               </TableHead>
@@ -269,7 +274,9 @@ export default function FundingRatePage() {
                 >
                   <div className="flex items-center gap-2">
                     24小时交易量
-                    <ArrowUpDown className="h-4 w-4" />
+                    {sortField === 'volume' ? (
+                      sortOrder === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                    ) : <ArrowUpDown className="h-4 w-4" />}
                   </div>
                 </Button>
               </TableHead>
@@ -285,12 +292,13 @@ export default function FundingRatePage() {
                 <TableCell colSpan={3} className="text-center">暂无数据</TableCell>
               </TableRow>
             ) : (
-              currentTickers.map((ticker) => (
+              currentTickers.map((ticker, index) => (
                 <TableRow
                   key={ticker.symbol}
                   className="cursor-pointer hover:bg-muted/50"
                   onClick={() => handleRowClick(ticker.symbol)}
                 >
+                  <TableCell>{startIndex + index + 1}</TableCell>
                   <TableCell className="font-medium">{ticker.symbol.replace('PF_', '').replace('USD', '')}</TableCell>
                   <TableCell>
                     <span className={ticker.fundingRates[timeRange] >= 0 ? 'text-red-500' : 'text-green-500'}>
