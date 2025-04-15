@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { startOfHour, isSameHour } from 'date-fns'
 
 // 创建一个缓存 Map，key 是 symbol，value 是 { data: any, timestamp: number }
-const cache = new Map<string, { data: any, timestamp: number }>()
+const cache = new Map()
 
 export async function GET(request: Request) {
   try {
