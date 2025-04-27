@@ -43,6 +43,9 @@ const timeOptions = [
   { value: '8h', label: '8小时' },
   { value: '12h', label: '12小时' },
   { value: '24h', label: '24小时' },
+  { value: '7d', label: '7天' },
+  { value: '14d', label: '14天' },
+  { value: '30d', label: '30天' },
 ]
 
 const timeRangeToHours = {
@@ -52,6 +55,9 @@ const timeRangeToHours = {
   '8h': 8,
   '12h': 12,
   '24h': 24,
+  '7d': 24 * 7,
+  '14d': 24 * 14,
+  '30d': 24 * 30,
 }
 
 const formatVolume = (volume: number) => {

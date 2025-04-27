@@ -46,8 +46,8 @@ export function FundingRateChart({ data, lines }: FundingRateChartProps) {
               key={line}
               type="monotone"
               dataKey={line}
-              stroke={`hsl(${index * 60}, 70%, 50%)`}
-              activeDot={{ r: 8 }}
+              dot={false}
+              stroke="#82ca9d"
             />
           ))}
         </LineChart>
