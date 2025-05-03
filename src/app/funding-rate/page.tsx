@@ -131,7 +131,7 @@ export default function FundingRatePage() {
         const response = await getTickers()
         const perpetualTickers = response.tickers
           .filter(ticker => ticker.tag === 'perpetual')
-          .filter(ticker => ticker.volumeQuote >= 1000) // 过滤掉交易量小于 1K 的交易对
+          //.filter(ticker => ticker.volumeQuote >= 1000) // 过滤掉交易量小于 1K 的交易对
 
         // 获取每个交易对的资金费率历史并计算所有时间周期的累积值
         const tickersWithFunding = await Promise.all(
