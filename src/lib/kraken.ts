@@ -37,3 +37,22 @@ export async function getFundingRates(symbol: string): Promise<FundingRateRespon
     throw new Error(`Failed to fetch funding rates for ${symbol}: Unknown error`)
   }
 }
+
+export async function getCollateralTickers(): Promise<{ tickers: string[] }> {
+  try {
+    const response = await fetch('/api/collateral-tickers')
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    const data = await response.json()
+    return data
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error('Error fetching collateral tickers:', error.message)
+      throw new Error(`Failed to fetch collateral tickers: ${error.message}`)
+    }
+    throw new Error('Failed to fetch collateral tickers: Unknown error')
+  }
+}

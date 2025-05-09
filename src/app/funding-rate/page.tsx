@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getTickers, getFundingRates } from '@/lib/kraken'
+import { getTickers, getFundingRates, getCollateralTickers } from '@/lib/kraken'
 import { Ticker } from '@/types/kraken'
 import {
   Table,
@@ -27,6 +27,7 @@ import {
 import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { FundingRateChart } from '@/components/ui/line-chart'
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Pagination,
   PaginationContent,
@@ -92,6 +93,8 @@ export default function FundingRatePage() {
   const [historicalRates, setHistoricalRates] = useState<[]>([])
   const [showModal, setShowModal] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
+  const [showOnlyCollateral, setShowOnlyCollateral] = useState(false)
+  const [collateralTickers, setCollateralTickers] = useState<string[]>([])
   const itemsPerPage = 50
 
   const handleSort = (field: SortField) => {
@@ -103,7 +106,11 @@ export default function FundingRatePage() {
     }
   }
 
-  const sortedTickers = [...tickers].sort((a, b) => {
+  const filteredTickers = showOnlyCollateral
+    ? tickers.filter(ticker => collateralTickers.includes(ticker.symbol))
+    : tickers
+
+  const sortedTickers = [...filteredTickers].sort((a, b) => {
     let comparison = 0
     switch (sortField) {
       case 'symbol':
@@ -128,8 +135,13 @@ export default function FundingRatePage() {
     const fetchData = async () => {
       try {
         setLoading(true)
-        const response = await getTickers()
-        const perpetualTickers = response.tickers
+        const [tickersResponse, collateralResponse] = await Promise.all([
+          getTickers(),
+          getCollateralTickers()
+        ])
+        
+        setCollateralTickers(collateralResponse.tickers)
+        const perpetualTickers = tickersResponse.tickers
           .filter(ticker => ticker.tag === 'perpetual')
           .filter(ticker => ticker.volumeQuote >= 1000) // 过滤掉交易量小于 1K 的交易对
 
@@ -180,14 +192,14 @@ export default function FundingRatePage() {
 
         setTickers(tickersWithFunding)
       } catch (error) {
-        console.error('Error fetching tickers:', error)
+        console.error('Error fetching data:', error)
       } finally {
         setLoading(false)
       }
     }
 
     fetchData()
-  }, []) // 只在组件挂载时获取一次数据
+  }, [])
 
   const handleRowClick = async (symbol: string) => {
     try {
@@ -225,18 +237,33 @@ export default function FundingRatePage() {
     <div className="px-4">
       <div className="flex flex-row items-center justify-between mb-6">
         <h1 className="text-xl md:text-2xl font-bold">资金费率总览</h1>
-        <Select value={timeRange} onValueChange={setTimeRange}>
-          <SelectTrigger className="w-[120px] md:w-[180px]">
-            <SelectValue placeholder="选择时间范围" />
-          </SelectTrigger>
-          <SelectContent>
-            {timeOptions.map(option => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="collateral"
+              checked={showOnlyCollateral}
+              onCheckedChange={(checked) => setShowOnlyCollateral(checked as boolean)}
+            />
+            <label
+              htmlFor="collateral"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              仅显示可做保证金的交易对
+            </label>
+          </div>
+          <Select value={timeRange} onValueChange={setTimeRange}>
+            <SelectTrigger className="w-[120px] md:w-[180px]">
+              <SelectValue placeholder="选择时间范围" />
+            </SelectTrigger>
+            <SelectContent>
+              {timeOptions.map(option => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="rounded-md border bg-card">
