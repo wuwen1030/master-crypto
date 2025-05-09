@@ -292,7 +292,7 @@ export default function FundingRatePage() {
                   className="h-auto px-0 font-medium hover:bg-transparent"
                 >
                   <div className="flex items-center gap-2">
-                    Cumulative Funding Rate
+                    Cumulative Value
                     {sortField === 'fundingRate' ? (
                       sortOrder === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
                     ) : <ArrowUpDown className="h-4 w-4" />}
