@@ -39,6 +39,6 @@ export async function GET() {
   try {
     return NextResponse.json({ tickers: collateralTickers.map(ticker =>  `PF_${ticker}USD`)})
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch collateral tickers' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to fetch collateral tickers, error: ' + error }, { status: 500 })
   }
 } 
