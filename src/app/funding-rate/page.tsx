@@ -38,15 +38,15 @@ import {
 } from "@/components/ui/pagination"
 
 const timeOptions = [
-  { value: '1h', label: '1小时' },
-  { value: '2h', label: '2小时' },
-  { value: '4h', label: '4小时' },
-  { value: '8h', label: '8小时' },
-  { value: '12h', label: '12小时' },
-  { value: '24h', label: '24小时' },
-  { value: '7d', label: '7天' },
-  { value: '14d', label: '14天' },
-  { value: '30d', label: '30天' },
+  { value: '1h', label: '1 Hour' },
+  { value: '2h', label: '2 Hours' },
+  { value: '4h', label: '4 Hours' },
+  { value: '8h', label: '8 Hours' },
+  { value: '12h', label: '12 Hours' },
+  { value: '24h', label: '24 Hours' },
+  { value: '7d', label: '7 Days' },
+  { value: '14d', label: '14 Days' },
+  { value: '30d', label: '30 Days' },
 ]
 
 const timeRangeToHours = {
@@ -236,7 +236,7 @@ export default function FundingRatePage() {
   return (
     <div className="px-4">
       <div className="flex flex-row items-center justify-between mb-6">
-        <h1 className="text-xl md:text-2xl font-bold">资金费率总览</h1>
+        <h1 className="text-xl md:text-2xl font-bold">Funding Rate Overview</h1>
         <div className="flex items-center gap-4">
           <div className="flex items-center space-x-2">
             <Checkbox
@@ -248,12 +248,12 @@ export default function FundingRatePage() {
               htmlFor="collateral"
               className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
             >
-              仅显示可做保证金的交易对
+              Show Collateral Only
             </label>
           </div>
           <Select value={timeRange} onValueChange={setTimeRange}>
             <SelectTrigger className="w-[120px] md:w-[180px]">
-              <SelectValue placeholder="选择时间范围" />
+              <SelectValue placeholder="Select Time Range" />
             </SelectTrigger>
             <SelectContent>
               {timeOptions.map(option => (
@@ -270,7 +270,7 @@ export default function FundingRatePage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>序号</TableHead>
+              <TableHead>No.</TableHead>
               <TableHead>
                 <Button
                   variant="ghost"
@@ -278,7 +278,7 @@ export default function FundingRatePage() {
                   className="h-auto px-0 font-medium hover:bg-transparent"
                 >
                   <div className="flex items-center gap-2">
-                    {`交易对 (${tickers.length})`}
+                    {`Symbol (${filteredTickers.length})`}
                     {sortField === 'symbol' ? (
                       sortOrder === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
                     ) : <ArrowUpDown className="h-4 w-4" />}
@@ -292,7 +292,7 @@ export default function FundingRatePage() {
                   className="h-auto px-0 font-medium hover:bg-transparent"
                 >
                   <div className="flex items-center gap-2">
-                    累计资金费率
+                    Cumulative Funding Rate
                     {sortField === 'fundingRate' ? (
                       sortOrder === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
                     ) : <ArrowUpDown className="h-4 w-4" />}
@@ -306,7 +306,7 @@ export default function FundingRatePage() {
                   className="h-auto px-0 font-medium hover:bg-transparent"
                 >
                   <div className="flex items-center gap-2">
-                    24小时交易量
+                    24h Volume
                     {sortField === 'volume' ? (
                       sortOrder === 'asc' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
                     ) : <ArrowUpDown className="h-4 w-4" />}
@@ -318,11 +318,11 @@ export default function FundingRatePage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={3} className="text-center">加载中...（数据量大，请耐心等待）</TableCell>
+                <TableCell colSpan={3} className="text-center">Loading... (Please wait, data is being processed)</TableCell>
               </TableRow>
             ) : sortedTickers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} className="text-center">暂无数据</TableCell>
+                <TableCell colSpan={3} className="text-center">No data available</TableCell>
               </TableRow>
             ) : (
               currentTickers.map((ticker, index) => (
@@ -378,7 +378,7 @@ export default function FundingRatePage() {
       <Dialog open={showModal} onOpenChange={setShowModal}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>{selectedSymbol} 资金费率历史</DialogTitle>
+            <DialogTitle>{selectedSymbol} Funding Rate History</DialogTitle>
           </DialogHeader>
           <div className="py-4">
             <FundingRateChart
