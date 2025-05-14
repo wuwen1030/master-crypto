@@ -12,7 +12,12 @@ export const authConfig = {
         if (isLoggedIn) return true;
         return false; // Redirect unauthenticated users to login page
       } else if (isLoggedIn) {
-        return Response.redirect(new URL('/trade', nextUrl));
+        // 判断 url 中是否包含 callbackUrl
+        if (nextUrl.searchParams.has('callbackUrl')) {
+          return Response.redirect(new URL(nextUrl.searchParams.get('callbackUrl') as string, nextUrl));
+        } else {
+          return true;
+        }
       }
       return true;
     },
