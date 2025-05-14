@@ -32,11 +32,6 @@ const items = [
     title: "Trend",
     url: "/funding-rate/trend",
     icon: LineChart,
-  },
-  {
-    title: "Trade",
-    url: "/trade",
-    icon: Bot,
   }
 ]
 
