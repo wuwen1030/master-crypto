@@ -14,18 +14,26 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 
-const EXCHANGES = ["Binance", "Kraken", "GateIO"] as const;
-const TRADING_PAIRS = ["BTC/USDT", "ETH/USDT", "SOL/USDT"] as const;
+const EXCHANGES = ["binance", "kraken", "gateio", "kraken_future"] as const;
+
+const EXCHANGE_MAP = {
+  "binance": "Binance",
+  "kraken": "Kraken",
+  "gateio": "Gate.io",
+  "kraken_future": "Kraken",
+} as const;
+
+const TRADING_PAIRS = ["BTC", "ETH", "SOL"] as const;
 
 export function TradingForm() {
   const [formData, setFormData] = useState({
-    tradingPair: "BTC/USDT",
+    tradingPair: "BTC",
     amount: "0.01",
     times: "1",
     direction: "open",
-    spotExchange: "Binance",
-    futuresExchange: "Binance",
-    basisThreshold: "0.5",
+    spotExchange: "binance",
+    futuresExchange: "kraken_future",
+    basisThreshold: "0.001",
   });
 
   const { sendMessage, isConnected } = useWebSocket();
@@ -114,7 +122,7 @@ export function TradingForm() {
           <SelectContent>
             {EXCHANGES.map((exchange) => (
               <SelectItem key={exchange} value={exchange}>
-                {exchange}
+                {EXCHANGE_MAP[exchange]}
               </SelectItem>
             ))}
           </SelectContent>
@@ -133,7 +141,7 @@ export function TradingForm() {
           <SelectContent>
             {EXCHANGES.map((exchange) => (
               <SelectItem key={exchange} value={exchange}>
-                {exchange}
+                {EXCHANGE_MAP[exchange]}
               </SelectItem>
             ))}
           </SelectContent>
@@ -141,11 +149,11 @@ export function TradingForm() {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="basisThreshold">基差阈值 (%)</Label>
+        <Label htmlFor="basisThreshold">基差阈值</Label>
         <Input
           id="basisThreshold"
           type="number"
-          step="0.1"
+          step="0.001"
           value={formData.basisThreshold}
           onChange={(e) => handleChange("basisThreshold", e.target.value)}
         />
