@@ -8,6 +8,12 @@ import { FundingRateChart } from '@/components/ui/line-chart'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -35,6 +41,10 @@ interface Stats {
   symbol: string
   total: number
   average: number
+  positiveDays: number
+  negativeDays: number
+  maxValue: number
+  minValue: number
 }
 
 export default function FundingDatePage() {
@@ -62,18 +72,37 @@ export default function FundingDatePage() {
     return selectedPairs.map(symbol => {
       let total = 0
       let count = 0
+      let positiveDays = 0
+      let negativeDays = 0
+      let maxValue = -Infinity
+      let minValue = Infinity
       
       data.forEach(item => {
         if (symbol in item) {
-          total += item[symbol]
+          const dailyValue = item[symbol] // 这已经是按日聚合的值
+          total += dailyValue
           count++
+          
+          if (dailyValue > 0) {
+            positiveDays++
+          } else if (dailyValue < 0) {
+            negativeDays++
+          }
+          
+          // 按日统计的最大最小值
+          maxValue = Math.max(maxValue, dailyValue)
+          minValue = Math.min(minValue, dailyValue)
         }
       })
 
       return {
         symbol,
         total: parseFloat(total.toFixed(4)),
-        average: parseFloat((total / (count || 1)).toFixed(4))
+        average: parseFloat((total / (count || 1)).toFixed(4)),
+        positiveDays,
+        negativeDays,
+        maxValue: count > 0 ? parseFloat(maxValue.toFixed(4)) : 0,
+        minValue: count > 0 ? parseFloat(minValue.toFixed(4)) : 0
       }
     })
   }, [selectedPairs])
@@ -243,17 +272,70 @@ export default function FundingDatePage() {
       </div>
 
       {stats.length > 0 && (
-        <div className="mt-4 space-y-2">
-          <h3 className="text-lg font-semibold">Statistics</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="mt-6">
+          <h3 className="text-xl font-bold mb-6">Statistics Overview</h3>
+          <div className="space-y-6">
             {stats.map((stat) => (
-              <div key={stat.symbol} className="p-4 border rounded-lg">
-                <div className="font-medium">{stat.symbol}</div>
-                <div className="text-sm text-gray-600">
-                  <div>Total: {(stat.total * 100).toFixed(4)}%</div>
-                  <div>Average: {(stat.average * 100).toFixed(4)}%</div>
-                </div>
-              </div>
+              <Card key={stat.symbol} className="shadow-lg hover:shadow-xl transition-shadow duration-300">
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-xl font-bold text-center text-primary">
+                    {stat.symbol}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {/* 响应式网格：小屏幕2列3行，超宽屏6列1行 */}
+                  <div className="grid grid-cols-2 lg:grid-cols-6 gap-3 lg:gap-4">
+                    <div className="text-center p-2 lg:p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="text-xs font-medium text-blue-600 uppercase tracking-wide mb-1 leading-tight">
+                        Total
+                      </div>
+                      <div className="text-sm lg:text-lg font-bold text-blue-800 leading-tight">
+                        {(stat.total * 100).toFixed(4)}%
+                      </div>
+                    </div>
+                    <div className="text-center p-2 lg:p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                      <div className="text-xs font-medium text-indigo-600 uppercase tracking-wide mb-1 leading-tight">
+                        Average
+                      </div>
+                      <div className="text-sm lg:text-lg font-bold text-indigo-800 leading-tight">
+                        {(stat.average * 100).toFixed(4)}%
+                      </div>
+                    </div>
+                    <div className="text-center p-2 lg:p-3 bg-green-50 rounded-lg border border-green-200">
+                      <div className="text-xs font-medium text-green-600 uppercase tracking-wide mb-1 leading-tight">
+                        Positive<br className="lg:hidden" /> Days
+                      </div>
+                      <div className="text-sm lg:text-lg font-bold text-green-800 leading-tight">
+                        {stat.positiveDays}
+                      </div>
+                    </div>
+                    <div className="text-center p-2 lg:p-3 bg-red-50 rounded-lg border border-red-200">
+                      <div className="text-xs font-medium text-red-600 uppercase tracking-wide mb-1 leading-tight">
+                        Negative<br className="lg:hidden" /> Days
+                      </div>
+                      <div className="text-sm lg:text-lg font-bold text-red-800 leading-tight">
+                        {stat.negativeDays}
+                      </div>
+                    </div>
+                    <div className="text-center p-2 lg:p-3 bg-emerald-50 rounded-lg border border-emerald-200">
+                      <div className="text-xs font-medium text-emerald-600 uppercase tracking-wide mb-1 leading-tight">
+                        Daily<br className="lg:hidden" /> Max
+                      </div>
+                      <div className="text-sm lg:text-lg font-bold text-emerald-800 leading-tight">
+                        {(stat.maxValue * 100).toFixed(4)}%
+                      </div>
+                    </div>
+                    <div className="text-center p-2 lg:p-3 bg-rose-50 rounded-lg border border-rose-200">
+                      <div className="text-xs font-medium text-rose-600 uppercase tracking-wide mb-1 leading-tight">
+                        Daily<br className="lg:hidden" /> Min
+                      </div>
+                      <div className="text-sm lg:text-lg font-bold text-rose-800 leading-tight">
+                        {(stat.minValue * 100).toFixed(4)}%
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>
