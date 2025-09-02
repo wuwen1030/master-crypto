@@ -47,6 +47,9 @@ const timeOptions = [
   { value: '7d', label: '7 Days' },
   { value: '14d', label: '14 Days' },
   { value: '30d', label: '30 Days' },
+  { value: '90d', label: '90 Days' },
+  { value: '180d', label: '180 Days' },
+  { value: '360d', label: '360 Days' },
 ]
 
 const timeRangeToHours = {
@@ -59,6 +62,9 @@ const timeRangeToHours = {
   '7d': 24 * 7,
   '14d': 24 * 14,
   '30d': 24 * 30,
+  '90d': 24 * 90,
+  '180d': 24 * 180,
+  '360d': 24 * 360,
 }
 
 const formatVolume = (volume: number) => {
