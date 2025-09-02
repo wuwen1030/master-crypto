@@ -39,9 +39,6 @@ import {
 
 const timeOptions = [
   { value: '1h', label: '1 Hour' },
-  { value: '2h', label: '2 Hours' },
-  { value: '4h', label: '4 Hours' },
-  { value: '8h', label: '8 Hours' },
   { value: '12h', label: '12 Hours' },
   { value: '24h', label: '24 Hours' },
   { value: '7d', label: '7 Days' },
@@ -54,9 +51,6 @@ const timeOptions = [
 
 const timeRangeToHours = {
   '1h': 1,
-  '2h': 2,
-  '4h': 4,
-  '8h': 8,
   '12h': 12,
   '24h': 24,
   '7d': 24 * 7,
