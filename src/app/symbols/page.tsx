@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Search, Heart, Shield } from "lucide-react";
 import { useFavorites } from "@/hooks/useFavorites";
+import { Ticker } from "@/types/kraken";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,7 +71,7 @@ export default function SymbolsPage() {
         const collateralSet = new Set(collateralData.tickers || []);
 
         // 处理 tickers 数据
-        const processedSymbols: SymbolData[] = tickersData.tickers?.map((ticker: any, index: number) => {
+        const processedSymbols: SymbolData[] = tickersData.tickers?.map((ticker: Ticker, index: number) => {
           const symbol = ticker.symbol;
           // 将 PF_BTCUSD 转换为 BTC
           const displayName = ticker.pair.split(':')[0];
