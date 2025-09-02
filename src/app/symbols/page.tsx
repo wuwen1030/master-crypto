@@ -213,8 +213,8 @@ export default function SymbolsPage() {
                     <TableHead className="w-20">No.</TableHead>
                     <TableHead>Symbol</TableHead>
                     <TableHead>Name</TableHead>
-                    <TableHead className="w-24 text-center">Favorite</TableHead>
-                    <TableHead className="w-24 text-center">Collateral</TableHead>
+                    <TableHead className="text-center">Favorite</TableHead>
+                    <TableHead className="text-center">Collateral</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
