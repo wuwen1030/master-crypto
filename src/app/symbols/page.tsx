@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { Search, Heart, Shield } from "lucide-react";
+import { useFavorites } from "@/hooks/useFavorites";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,36 +33,18 @@ interface SymbolData {
 }
 
 const ITEMS_PER_PAGE = 50;
-const FAVORITES_KEY = 'symbol-favorites';
 
 export default function SymbolsPage() {
   const [symbols, setSymbols] = useState<SymbolData[]>([]);
-  const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // 使用统一的收藏管理 Hook
+  const { favorites, isFavorite, toggleFavorite } = useFavorites();
 
-  // 从 localStorage 加载收藏列表
-  useEffect(() => {
-    try {
-      const savedFavorites = localStorage.getItem(FAVORITES_KEY);
-      if (savedFavorites) {
-        setFavorites(new Set(JSON.parse(savedFavorites)));
-      }
-    } catch (error) {
-      console.error('Error loading favorites from localStorage:', error);
-    }
-  }, []);
 
-  // 保存收藏列表到 localStorage
-  const saveFavorites = (newFavorites: Set<string>) => {
-    try {
-      localStorage.setItem(FAVORITES_KEY, JSON.stringify(Array.from(newFavorites)));
-    } catch (error) {
-      console.error('Error saving favorites to localStorage:', error);
-    }
-  };
 
   // 获取数据
   useEffect(() => {
@@ -118,22 +101,10 @@ export default function SymbolsPage() {
     setSymbols(prevSymbols => 
       prevSymbols.map(symbol => ({
         ...symbol,
-        isFavorite: favorites.has(symbol.symbol)
+        isFavorite: isFavorite(symbol.symbol)
       }))
     );
-  }, [favorites]);
-
-  // 切换收藏状态
-  const toggleFavorite = (symbol: string) => {
-    const newFavorites = new Set(favorites);
-    if (newFavorites.has(symbol)) {
-      newFavorites.delete(symbol);
-    } else {
-      newFavorites.add(symbol);
-    }
-    setFavorites(newFavorites);
-    saveFavorites(newFavorites);
-  };
+  }, [favorites, isFavorite]);
 
   // 过滤和分页逻辑
   const filteredSymbols = useMemo(() => {

@@ -27,8 +27,8 @@ import {
 } from '@/components/ui/select'
 import { CalendarIcon } from '@radix-ui/react-icons'
 import { format } from 'date-fns'
-import { Star, StarOff } from 'lucide-react'
-import { getFavoriteSymbols, toggleFavoriteSymbol, getShowOnlyFavorites, setShowOnlyFavorites as saveShowOnlyFavorites } from '@/lib/utils'
+import { ExternalLink } from 'lucide-react'
+import { getFavoriteSymbols, getShowOnlyFavorites, setShowOnlyFavorites as saveShowOnlyFavorites } from '@/lib/utils'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   Tooltip,
@@ -129,10 +129,7 @@ export default function FundingDatePage() {
     setShowOnlyFavorites(getShowOnlyFavorites())
   }, [])
 
-  const handleToggleFavorite = (symbol: string) => {
-    const updatedFavorites = toggleFavoriteSymbol(symbol)
-    setFavoriteSymbols(updatedFavorites)
-  }
+
 
   const formatChartData = (
     results: { symbol: string; rates: FundingRate[] }[],
@@ -208,36 +205,18 @@ export default function FundingDatePage() {
 
           <Tooltip delayDuration={300}>
             <TooltipTrigger asChild>
-              <div> {/* Add a wrapper div */}
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" size="icon">
-                      <Star className="h-4 w-4" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[200px] p-2">
-                    <div className="space-y-1 max-h-[300px] overflow-y-auto">
-                      {tickers.map((ticker) => (
-                        <button
-                          key={ticker.symbol}
-                          onClick={() => handleToggleFavorite(ticker.symbol)}
-                          className="flex items-center gap-2 w-full hover:bg-gray-100 p-1 rounded text-left"
-                        >
-                          {favoriteSymbols.includes(ticker.symbol) ? (
-                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                          ) : (
-                            <StarOff className="h-4 w-4" />
-                          )}
-                          <span className="text-sm">{ticker.symbol}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => window.open('/symbols', '_blank')}
+                className="gap-2"
+              >
+                <ExternalLink className="h-4 w-4" />
+                Manage Favorites
+              </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              <p>Manage favorites</p>
+              <p>Open symbols page to manage favorites</p>
             </TooltipContent>
           </Tooltip>
         </div>

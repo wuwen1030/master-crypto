@@ -5,10 +5,12 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// 用于管理收藏的 symbols
+// 用于管理收藏的 symbols - 统一使用 'symbol-favorites' key
+const FAVORITES_KEY = 'symbol-favorites';
+
 export const getFavoriteSymbols = (): string[] => {
   if (typeof window === 'undefined') return [];
-  const favorites = localStorage.getItem('favoriteSymbols');
+  const favorites = localStorage.getItem(FAVORITES_KEY);
   return favorites ? JSON.parse(favorites) : [];
 };
 
@@ -22,7 +24,7 @@ export const toggleFavoriteSymbol = (symbol: string) => {
     favorites.splice(index, 1);
   }
   
-  localStorage.setItem('favoriteSymbols', JSON.stringify(favorites));
+  localStorage.setItem(FAVORITES_KEY, JSON.stringify(favorites));
   return favorites;
 };
 
