@@ -4,6 +4,7 @@ import * as React from "react"
 import {
   LineChart,
   LayoutDashboard,
+  Coins,
 } from "lucide-react"
 
 import {
@@ -31,6 +32,11 @@ const items = [
     title: "Trend",
     url: "/funding-rate/trend",
     icon: LineChart,
+  },
+  {
+    title: "Symbols",
+    url: "/symbols",
+    icon: Coins,
   }
 ]
 
