@@ -90,7 +90,7 @@ export default function FundingRatePage() {
   const [sortField, setSortField] = useState<SortField>('fundingRate')
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null)
-  const [historicalRates, setHistoricalRates] = useState<[]>([])
+  const [historicalRates, setHistoricalRates] = useState<{ dateTs: number; fundingRate: number }[]>([])
   const [showModal, setShowModal] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [showOnlyCollateral, setShowOnlyCollateral] = useState(false)
@@ -145,9 +145,9 @@ export default function FundingRatePage() {
           .filter(ticker => ticker.tag === 'perpetual')
           //.filter(ticker => ticker.volumeQuote >= 1000) // 过滤掉交易量小于 1K 的交易对
 
-        // 获取每个交易对的资金费率历史并计算所有时间周期的累积值
-        const tickersWithFunding = await Promise.all(
-          perpetualTickers.map(async (ticker) => {
+        // 并发受限地获取每个交易对的资金费率历史并计算所有时间周期的累积值
+        const limit = 10
+        const tasks = perpetualTickers.map((ticker) => async () => {
             try {
               const fundingResponse = await getFundingRates(ticker.symbol)
               const now = Date.now()
@@ -188,7 +188,20 @@ export default function FundingRatePage() {
               }
             }
           })
-        )
+        const runWithLimit = async <T,>(fns: (() => Promise<T>)[], concurrency: number) => {
+          const results: T[] = new Array(fns.length)
+          let index = 0
+          const workers = new Array(Math.min(concurrency, fns.length)).fill(0).map(async () => {
+            while (true) {
+              const current = index++
+              if (current >= fns.length) break
+              results[current] = await fns[current]()
+            }
+          })
+          await Promise.all(workers)
+          return results
+        }
+        const tickersWithFunding = await runWithLimit(tasks, limit)
 
         setTickers(tickersWithFunding)
       } catch (error) {
@@ -210,22 +223,13 @@ export default function FundingRatePage() {
 
       const rates = response.rates
         .filter(rate => new Date(rate.timestamp).getTime() >= startTime)
-        .map(rate => {
-          const chartData = {
-            date: new Date(rate.timestamp).toLocaleTimeString('zh-CN', {
-              year: 'numeric',
-              month: '2-digit',
-              day: '2-digit',
-              hour: '2-digit',
-              minute: '2-digit'
-            }),
-            fundingRate: rate.relativeFundingRate
-          }
-          return chartData
-        })
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        .map(rate => ({
+          dateTs: new Date(rate.timestamp).getTime(),
+          fundingRate: rate.relativeFundingRate
+        }))
+        .sort((a, b) => a.dateTs - b.dateTs)
 
-      setHistoricalRates(rates as [])
+      setHistoricalRates(rates)
       setSelectedSymbol(symbol.replace('PF_', '').replace('USD', ''))
       setShowModal(true)
     } catch (error) {
@@ -381,10 +385,7 @@ export default function FundingRatePage() {
             <DialogTitle>{selectedSymbol} Funding Rate History</DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            <FundingRateChart
-              data={historicalRates as []}
-              lines={['fundingRate']}
-            />
+            <FundingRateChart data={historicalRates} lines={['fundingRate']} />
           </div>
         </DialogContent>
       </Dialog>

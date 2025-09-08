@@ -45,14 +45,16 @@ const collateralTickers = [
   'GRT',
   'RUNE',
   'TRX',
-  'UNI',,
+  'UNI',
   'USDC',
   'XRP',
 ]
 
 export async function GET() {
   try {
-    return NextResponse.json({ tickers: collateralTickers.map(ticker =>  `PF_${ticker}USD`)})
+    // filter(Boolean) 防止出现空项导致 PF_undefinedUSD
+    const mapped = collateralTickers.filter(Boolean).map((ticker) => `PF_${ticker}USD`)
+    return NextResponse.json({ tickers: mapped })
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch collateral tickers, error: ' + error }, { status: 500 })
   }

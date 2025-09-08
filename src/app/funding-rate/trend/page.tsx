@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { DateRange } from 'react-day-picker'
 import { addDays } from 'date-fns'
 import { getTickers, getFundingRates } from '@/lib/kraken'
-import { FundingRateChart } from '@/components/ui/line-chart'
+import { FundingRateChart, type TimeSeriesPoint } from '@/components/ui/line-chart'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import {
@@ -50,7 +50,7 @@ interface Stats {
 export default function FundingDatePage() {
   const [tickers, setTickers] = useState<Ticker[]>([])
   const [selectedPairs, setSelectedPairs] = useState<string[]>([])
-  const [rates, setRates] = useState<(Record<'date', string> & Record<string, number>)[]>([])
+  const [rates, setRates] = useState<TimeSeriesPoint[]>([])
   const [dateRange, setDateRange] = useState<DateRange>({
     from: addDays(new Date(), -7),
     to: new Date(),
@@ -68,7 +68,7 @@ export default function FundingDatePage() {
     })
   }, [])
 
-  const calculateStats = useCallback((data: (Record<'date', string> & Record<string, number>)[]) => {
+  const calculateStats = useCallback((data: TimeSeriesPoint[]) => {
     return selectedPairs.map(symbol => {
       let total = 0
       let count = 0
@@ -135,31 +135,34 @@ export default function FundingDatePage() {
     results: { symbol: string; rates: FundingRate[] }[],
     dateRange: DateRange
   ) => {
-    const dailySums = new Map<string, Record<'date', string> & Record<string, number>>()
+    const dailySums = new Map<number, Record<'dateTs', number> & Record<string, number>>()
 
     results.forEach(({ symbol, rates }) => {
       rates.forEach((rate) => {
-        const date = new Date(rate.timestamp).toLocaleDateString('zh-CN')
-        
-        if (!dailySums.has(date)) {
-          dailySums.set(date, { date } as Record<'date', string> & Record<string, number>)
+        const ts = new Date(rate.timestamp).getTime()
+        const dayStart = new Date(ts)
+        dayStart.setHours(0, 0, 0, 0)
+        const dayTs = dayStart.getTime()
+
+        if (!dailySums.has(dayTs)) {
+          dailySums.set(dayTs, { dateTs: dayTs } as Record<'dateTs', number> & Record<string, number>)
         }
-        
-        const dayData = dailySums.get(date)!
+
+        const dayData = dailySums.get(dayTs)!
         if (!(symbol in dayData)) {
           dayData[symbol] = 0
         }
-        
+
         dayData[symbol] = dayData[symbol] + rate.relativeFundingRate
       })
     })
 
+    const from = dateRange.from ? new Date(dateRange.from).setHours(0, 0, 0, 0) : -Infinity
+    const to = dateRange.to ? new Date(dateRange.to).setHours(23, 59, 59, 999) : Infinity
+
     return Array.from(dailySums.values())
-      .filter((d) => {
-        const date = new Date(d.date)
-        return date >= dateRange.from! && date <= dateRange.to!
-      })
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .filter((d) => d.dateTs >= from && d.dateTs <= to)
+      .sort((a, b) => a.dateTs - b.dateTs)
   }
 
   const filteredSymbols = useMemo(() => {
@@ -322,10 +325,7 @@ export default function FundingDatePage() {
 
       <div className="mt-6">
         {rates.length > 0 && (
-          <FundingRateChart
-            data={rates as []}
-            lines={selectedPairs}
-          />
+          <FundingRateChart data={rates} lines={selectedPairs} />
         )}
       </div>
     </div>

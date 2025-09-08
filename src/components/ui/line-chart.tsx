@@ -11,8 +11,11 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 
+// 通用数据点：以时间戳为横轴，其他键为数值序列
+export type TimeSeriesPoint = { dateTs: number } & Record<string, number>
+
 interface FundingRateChartProps {
-  data: []
+  data: TimeSeriesPoint[]
   lines: string[]
 }
 
@@ -31,13 +34,14 @@ export function FundingRateChart({ data, lines }: FundingRateChartProps) {
         >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis 
-            dataKey="date"
-            tickFormatter={(value) => new Date(value).toLocaleDateString()}
+            dataKey="dateTs"
+            tickFormatter={(value) => new Date(Number(value)).toLocaleString()}
           />
           <YAxis
-            tickFormatter={(value) => `${(value * 100).toFixed(4)}%`}
+            tickFormatter={(value) => `${(Number(value) * 100).toFixed(4)}%`}
           />
           <Tooltip 
+            labelFormatter={(label) => new Date(Number(label)).toLocaleString()}
             formatter={(value) => `${(Number(value) * 100).toFixed(4)}%`}
           />
           <Legend />

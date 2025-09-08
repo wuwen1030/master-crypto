@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'
 import { startOfHour, isSameHour } from 'date-fns'
 
 // 创建一个缓存 Map，key 是 symbol，value 是 { data: any, timestamp: number }
-const cache = new Map()
+const cache = new Map<string, { data: any; timestamp: number }>()
+const MAX_CACHE_ENTRIES = 500
 
 export async function GET(request: Request) {
   try {
@@ -32,12 +33,16 @@ export async function GET(request: Request) {
     }
     
     const data = await response.json()
-    
-    // 更新缓存，使用当前整点的时间戳
+
+    // 更新缓存，使用当前整点的时间戳，并做简单的容量控制（FIFO）
     cache.set(symbol, {
       data,
-      timestamp: startOfHour(now).getTime()
+      timestamp: startOfHour(now).getTime(),
     })
+    if (cache.size > MAX_CACHE_ENTRIES) {
+      const oldestKey = cache.keys().next().value
+      if (oldestKey) cache.delete(oldestKey)
+    }
     
     return NextResponse.json(data)
   } catch (error) {
