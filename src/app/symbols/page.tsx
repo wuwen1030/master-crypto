@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Search, Heart, Shield } from "lucide-react";
+import { Search, Heart, Shield, Plus, X } from "lucide-react";
 import { useFavorites } from "@/hooks/useFavorites";
 import { Ticker } from "@/types/kraken";
 import { Input } from "@/components/ui/input";
@@ -131,6 +131,29 @@ export default function SymbolsPage() {
 
   const totalPages = Math.ceil(filteredSymbols.length / ITEMS_PER_PAGE);
 
+  // 切换 collateral 状态（乐观更新）
+  const toggleCollateral = async (symbol: string, fromState: boolean) => {
+    // 乐观更新
+    setSymbols(prev => prev.map(s => s.symbol === symbol ? { ...s, isCollateral: !fromState } : s))
+    try {
+      if (fromState) {
+        const res = await fetch(`/api/collateral-tickers?symbol=${encodeURIComponent(symbol)}`, { method: 'DELETE' })
+        if (!res.ok) throw new Error('Failed to remove collateral')
+      } else {
+        const res = await fetch('/api/collateral-tickers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ symbol }),
+        })
+        if (!res.ok) throw new Error('Failed to add collateral')
+      }
+    } catch (e) {
+      // 回滚
+      setSymbols(prev => prev.map(s => s.symbol === symbol ? { ...s, isCollateral: fromState } : s))
+      console.error(e)
+    }
+  }
+
   // 重试加载
   const handleRetry = () => {
     window.location.reload();
@@ -247,12 +270,33 @@ export default function SymbolsPage() {
                         </Button>
                       </TableCell>
                       <TableCell className="text-center">
-                        {symbol.isCollateral && (
-                          <Badge variant="secondary" className="text-xs">
-                            <Shield className="h-3 w-3 mr-1" />
-                            Collateral
-                          </Badge>
-                        )}
+                        <div className="flex items-center justify-center gap-2">
+                          {symbol.isCollateral && (
+                            <Badge variant="secondary" className="text-xs">
+                              <Shield className="h-3 w-3 mr-1" />
+                              Collateral
+                            </Badge>
+                          )}
+                          <Button
+                            variant={symbol.isCollateral ? 'destructive' : 'outline'}
+                            size="sm"
+                            onClick={() => toggleCollateral(symbol.symbol, symbol.isCollateral)}
+                            className="h-8 px-2"
+                            title={symbol.isCollateral ? 'Remove from collateral' : 'Add to collateral'}
+                          >
+                            {symbol.isCollateral ? (
+                              <>
+                                <X className="h-4 w-4" />
+                                <span className="ml-1 hidden sm:inline">Remove</span>
+                              </>
+                            ) : (
+                              <>
+                                <Plus className="h-4 w-4" />
+                                <span className="ml-1 hidden sm:inline">Add</span>
+                              </>
+                            )}
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

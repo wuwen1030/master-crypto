@@ -1,61 +1,50 @@
 import { NextResponse } from 'next/server'
+import { getCollateralTickers, addCollateral, removeCollateral, replaceCollateral } from '@/server/collateralStore'
 
-// List of tickers that can be used as collateral according to Kraken documentation
-const collateralTickers = [
-  'AAVE',
-  'ALGO',
-  'ARB',
-  'FET',
-  'AVAX',
-  'BTC',
-  'TAO',
-  'TIA',
-  'ADA',
-  'LINK',
-  'ATOM',
-  'CRV',
-  'DAI',
-  'MANA',
-  'DOGE',
-  'WIF',
-  'ENA',
-  'ETH',
-  'FARTCOIN',
-  'FIL',
-  'INJ',
-  'KAS',
-  'KSM',
-  'LTC',
-  'MINA',
-  'NEAR',
-  'ONDO',
-  'PAXG',
-  'PEPE',
-  'DOT',
-  'RENDER',
-  'SEI',
-  'SHIB',
-  'SOL',
-  'SPX',
-  'XLM',
-  'STX',
-  'SUI',
-  'USDT',
-  'XTZ',
-  'GRT',
-  'RUNE',
-  'TRX',
-  'UNI',
-  'USDC',
-  'XRP',
-]
+export const dynamic = 'force-dynamic'
 
 export async function GET() {
   try {
-    // filter(Boolean) 防止出现空项导致 PF_undefinedUSD
-    const mapped = collateralTickers.filter(Boolean).map((ticker) => `PF_${ticker}USD`)
-    return NextResponse.json({ tickers: mapped })
+    const tickers = await getCollateralTickers()
+    return NextResponse.json({ tickers })
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch collateral tickers, error: ' + error }, { status: 500 })
   }
-} 
+}
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json().catch(() => ({}))
+    const symbol = typeof body?.symbol === 'string' ? body.symbol : ''
+    if (!symbol) return NextResponse.json({ error: 'symbol is required' }, { status: 400 })
+
+    const tickers = await addCollateral(symbol)
+    return NextResponse.json({ tickers })
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to add collateral, error: ' + error }, { status: 500 })
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const symbol = searchParams.get('symbol') || ''
+    if (!symbol) return NextResponse.json({ error: 'symbol is required' }, { status: 400 })
+
+    const tickers = await removeCollateral(symbol)
+    return NextResponse.json({ tickers })
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to remove collateral, error: ' + error }, { status: 500 })
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    const body = await request.json().catch(() => ({}))
+    const list = Array.isArray(body?.tickers) ? body.tickers : []
+    const tickers = await replaceCollateral(list)
+    return NextResponse.json({ tickers })
+  } catch (error) {
+    return NextResponse.json({ error: 'Failed to replace collateral, error: ' + error }, { status: 500 })
+  }
+}
