@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Search, Heart, Shield, Plus, X } from "lucide-react";
+import { Search, Heart, Shield } from "lucide-react";
 import { useFavorites } from "@/hooks/useFavorites";
 import { Ticker } from "@/types/kraken";
 import { Input } from "@/components/ui/input";
@@ -270,33 +270,21 @@ export default function SymbolsPage() {
                         </Button>
                       </TableCell>
                       <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          {symbol.isCollateral && (
-                            <Badge variant="secondary" className="text-xs">
-                              <Shield className="h-3 w-3 mr-1" />
-                              Collateral
-                            </Badge>
-                          )}
-                          <Button
-                            variant={symbol.isCollateral ? 'destructive' : 'outline'}
-                            size="sm"
-                            onClick={() => toggleCollateral(symbol.symbol, symbol.isCollateral)}
-                            className="h-8 px-2"
-                            title={symbol.isCollateral ? 'Remove from collateral' : 'Add to collateral'}
-                          >
-                            {symbol.isCollateral ? (
-                              <>
-                                <X className="h-4 w-4" />
-                                <span className="ml-1 hidden sm:inline">Remove</span>
-                              </>
-                            ) : (
-                              <>
-                                <Plus className="h-4 w-4" />
-                                <span className="ml-1 hidden sm:inline">Add</span>
-                              </>
-                            )}
-                          </Button>
-                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => toggleCollateral(symbol.symbol, symbol.isCollateral)}
+                          className="h-8 w-8 p-0"
+                          title={symbol.isCollateral ? 'Remove from collateral' : 'Add to collateral'}
+                        >
+                          <Shield
+                            className={`h-4 w-4 ${
+                              symbol.isCollateral
+                                ? 'fill-emerald-500 text-emerald-500'
+                                : 'text-muted-foreground hover:text-emerald-500'
+                            }`}
+                          />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
