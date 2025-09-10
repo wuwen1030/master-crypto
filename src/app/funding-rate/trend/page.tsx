@@ -28,7 +28,7 @@ import {
 import { CalendarIcon } from '@radix-ui/react-icons'
 import { format } from 'date-fns'
 import { ExternalLink } from 'lucide-react'
-import { getFavoriteSymbols, getShowOnlyFavorites, setShowOnlyFavorites as saveShowOnlyFavorites } from '@/lib/utils'
+import { getShowOnlyFavorites, setShowOnlyFavorites as saveShowOnlyFavorites } from '@/lib/utils'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   Tooltip,
@@ -36,6 +36,9 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { Ticker, FundingRate } from '@/types/kraken'
+import { useSession } from '@/hooks/useSession'
+import { useFavorites } from '@/hooks/useFavorites'
+import { useRouter } from 'next/navigation'
 
 interface Stats {
   symbol: string
@@ -58,6 +61,9 @@ export default function FundingDatePage() {
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false)
   const [favoriteSymbols, setFavoriteSymbols] = useState<string[]>([])
   const [stats, setStats] = useState<Stats[]>([])
+  const { user } = useSession()
+  const { favoritesList } = useFavorites()
+  const router = useRouter()
 
   useEffect(() => {
     getTickers().then((data) => {
@@ -125,7 +131,10 @@ export default function FundingDatePage() {
   }, [selectedPairs, dateRange, calculateStats])
 
   useEffect(() => {
-    setFavoriteSymbols(getFavoriteSymbols())
+    setFavoriteSymbols(favoritesList)
+  }, [favoritesList])
+
+  useEffect(() => {
     setShowOnlyFavorites(getShowOnlyFavorites())
   }, [])
 
@@ -171,6 +180,10 @@ export default function FundingDatePage() {
   }, [tickers, showOnlyFavorites, favoriteSymbols])
 
   const handleShowOnlyFavoritesChange = (checked: boolean) => {
+    if (checked && !user) {
+      router.push(`/login?redirect=${encodeURIComponent('/funding-rate/trend')}`)
+      return
+    }
     setShowOnlyFavorites(checked)
     saveShowOnlyFavorites(checked)
   }
