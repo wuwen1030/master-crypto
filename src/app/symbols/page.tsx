@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Search, Heart, Shield } from "lucide-react";
 import { useFavorites } from "@/hooks/useFavorites";
+import { useSession } from "@/hooks/useSession";
 import { Ticker } from "@/types/kraken";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { usePathname, useRouter } from "next/navigation";
 
 interface SymbolData {
   id: number;
@@ -43,6 +45,9 @@ export default function SymbolsPage() {
   
   // 使用统一的收藏管理 Hook
   const { favorites, isFavorite, toggleFavorite } = useFavorites();
+  const { user } = useSession();
+  const router = useRouter();
+  const pathname = usePathname();
 
 
 
@@ -256,7 +261,13 @@ export default function SymbolsPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => toggleFavorite(symbol.symbol)}
+                          onClick={() => {
+                            if (!user) {
+                              router.push(`/login?redirect=${encodeURIComponent(pathname || '/symbols')}`)
+                              return
+                            }
+                            toggleFavorite(symbol.symbol)
+                          }}
                           className="h-8 w-8 p-0"
                         >
                           <Heart
