@@ -28,7 +28,7 @@ export type JWTPayload = {
 
 export async function signToken(payload: JWTPayload) {
   const secret = getSecret()
-  const jwt = await new SignJWT(payload as any)
+  const jwt = await new SignJWT({ uid: payload.uid, email: payload.email })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime(`${MAX_AGE}s`)
@@ -41,7 +41,7 @@ export async function verifyToken(token: string): Promise<JWTPayload | null> {
     const secret = getSecret()
     const { payload } = await jwtVerify(token, encoder.encode(secret))
     return { uid: String(payload.uid), email: String(payload.email) }
-  } catch (e) {
+  } catch {
     return null
   }
 }
@@ -80,4 +80,3 @@ export async function getCurrentUserFromCookies() {
 }
 
 export const authCookieName = SESSION_COOKIE
-

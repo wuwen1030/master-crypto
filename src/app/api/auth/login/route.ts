@@ -15,11 +15,13 @@ export async function POST(req: Request) {
     const { email, password } = schema.parse(body)
 
     const sql = getSql()
-    const rows = await sql`SELECT id, email, password_hash FROM users WHERE email = ${email}`
-    if ((rows as any[]).length === 0) {
+    const rows = (await sql`SELECT id, email, password_hash FROM users WHERE email = ${email}`) as unknown as Array<{
+      id: string; email: string; password_hash: string
+    }>
+    if (rows.length === 0) {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
     }
-    const user = (rows as any[])[0] as { id: string; email: string; password_hash: string }
+    const user = rows[0]
     const ok = await verifyPassword(password, user.password_hash)
     if (!ok) {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
@@ -29,8 +31,8 @@ export async function POST(req: Request) {
     const res = NextResponse.json({ success: true, user: { id: user.id, email: user.email } })
     setSessionCookie(res, jwt)
     return res
-  } catch (err: any) {
-    const message = err?.message || 'Invalid request'
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Invalid request'
     return NextResponse.json({ error: message }, { status: 400 })
   }
 }

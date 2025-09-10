@@ -41,8 +41,9 @@ export default function RegisterPage() {
       setTimeout(() => {
         router.push(`/login?redirect=${encodeURIComponent(redirect)}&registered=1`)
       }, 800)
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Registration failed'
+      setError(message)
     } finally {
       setLoading(false)
     }
@@ -89,4 +90,3 @@ export default function RegisterPage() {
     </div>
   )
 }
-

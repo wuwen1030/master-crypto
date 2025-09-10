@@ -15,8 +15,8 @@ export async function POST(req: Request) {
     const { email, password } = schema.parse(body)
 
     const sql = getSql()
-    const existing = await sql`SELECT id FROM users WHERE email = ${email}`
-    if ((existing as any[]).length > 0) {
+    const existing = (await sql`SELECT id FROM users WHERE email = ${email}`) as unknown as Array<{ id: string }>
+    if (existing.length > 0) {
       return NextResponse.json({ error: 'Email already registered' }, { status: 409 })
     }
 
@@ -26,8 +26,8 @@ export async function POST(req: Request) {
 
     // Do not auto-login per requirement
     return NextResponse.json({ success: true })
-  } catch (err: any) {
-    const message = err?.message || 'Invalid request'
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Invalid request'
     return NextResponse.json({ error: message }, { status: 400 })
   }
 }

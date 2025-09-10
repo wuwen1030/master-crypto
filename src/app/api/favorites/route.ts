@@ -14,8 +14,8 @@ export async function GET() {
   const user = await getCurrentUserFromCookies()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const sql = getSql()
-  const rows = await sql`SELECT symbol FROM favorites WHERE user_id = ${user.id}`
-  const list = (rows as any[]).map((r: any) => r.symbol)
+  const rows = (await sql`SELECT symbol FROM favorites WHERE user_id = ${user.id}`) as unknown as Array<{ symbol: string }>
+  const list = rows.map((r) => r.symbol)
   return NextResponse.json({ favorites: list })
 }
 

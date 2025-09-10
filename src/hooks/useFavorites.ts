@@ -29,7 +29,7 @@ export const useFavorites = (): UseFavoritesReturn => {
           const data = await res.json()
           setFavorites(new Set<string>((data.favorites || []) as string[]))
         }
-      } catch (e) {
+      } catch {
         // ignore
       }
     }

@@ -33,8 +33,9 @@ export default function LoginPage() {
       }
       router.push(redirect)
       router.refresh()
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : 'Login failed'
+      setError(message)
     } finally {
       setLoading(false)
     }
@@ -77,4 +78,3 @@ export default function LoginPage() {
     </div>
   )
 }
-
