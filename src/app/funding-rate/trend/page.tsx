@@ -59,7 +59,6 @@ export default function FundingDatePage() {
     to: new Date(),
   })
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false)
-  const [favoriteSymbols, setFavoriteSymbols] = useState<string[]>([])
   const [stats, setStats] = useState<Stats[]>([])
   const { user } = useSession()
   const { favoritesList } = useFavorites()
@@ -131,10 +130,6 @@ export default function FundingDatePage() {
   }, [selectedPairs, dateRange, calculateStats])
 
   useEffect(() => {
-    setFavoriteSymbols(favoritesList)
-  }, [favoritesList])
-
-  useEffect(() => {
     setShowOnlyFavorites(getShowOnlyFavorites())
   }, [])
 
@@ -176,8 +171,8 @@ export default function FundingDatePage() {
 
   const filteredSymbols = useMemo(() => {
     if (!showOnlyFavorites) return tickers
-    return tickers.filter(symbol => favoriteSymbols.includes(symbol.symbol))
-  }, [tickers, showOnlyFavorites, favoriteSymbols])
+    return tickers.filter(symbol => favoritesList.includes(symbol.symbol))
+  }, [tickers, showOnlyFavorites, favoritesList])
 
   const handleShowOnlyFavoritesChange = (checked: boolean) => {
     if (checked && !user) {
