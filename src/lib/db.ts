@@ -32,6 +32,12 @@ export async function ensureSchema() {
       PRIMARY KEY (user_id, symbol)
     )
   `
+  await sql`
+    CREATE TABLE IF NOT EXISTS collateral_tickers (
+      symbol TEXT PRIMARY KEY,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `
   _initialized = true
 }
 
