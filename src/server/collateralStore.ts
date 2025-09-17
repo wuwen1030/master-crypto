@@ -7,6 +7,8 @@ const DEFAULT_COLLATERAL = [
 const SYMBOL_RE = /^PF_[A-Z0-9]+USD$/
 const DEFAULT_SYMBOLS = Array.from(new Set(DEFAULT_COLLATERAL.filter(Boolean).map((t) => `PF_${t}USD`)))
 
+type CollateralRow = { symbol: string }
+
 let collateralSeeded = false
 
 function normalizeSymbol(symbol: string) {
@@ -31,11 +33,12 @@ async function ensureCollateralSeed() {
 }
 
 async function fetchCollateralTickers(sql: ReturnType<typeof getSql>) {
-  const rows = await sql<{ symbol: string }>`
+  const rows = (await sql`
     SELECT symbol
     FROM collateral_tickers
     ORDER BY symbol
-  `
+  `) as CollateralRow[]
+
   return rows.map((row) => row.symbol)
 }
 
