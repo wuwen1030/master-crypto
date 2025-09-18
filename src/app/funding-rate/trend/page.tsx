@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { DateRange } from 'react-day-picker'
 import { addDays } from 'date-fns'
-import { getTickers, getFundingRates } from '@/lib/kraken'
+import { getTickers, getFundingRatesBatch } from '@/lib/kraken'
 import { FundingRateChart, type TimeSeriesPoint } from '@/components/ui/line-chart'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
@@ -113,20 +113,34 @@ export default function FundingDatePage() {
   }, [selectedPairs])
 
   useEffect(() => {
-    if (selectedPairs.length > 0) {
-      Promise.all(
-        selectedPairs.map((symbol) =>
-          getFundingRates(symbol).then((data) => ({
-            symbol,
-            rates: data.rates,
-          }))
-        )
-      ).then((results) => {
+    if (selectedPairs.length === 0) {
+      setRates([])
+      setStats([])
+      return
+    }
+
+    getFundingRatesBatch(selectedPairs)
+      .then((batchResponse) => {
+        if (batchResponse.errors) {
+          Object.entries(batchResponse.errors).forEach(([symbol, message]) => {
+            console.warn(`Failed to fetch funding rates for ${symbol}: ${message}`)
+          })
+        }
+
+        const results = selectedPairs.map((symbol) => ({
+          symbol,
+          rates: batchResponse.ratesBySymbol[symbol] ?? [],
+        }))
+
         const formattedData = formatChartData(results, dateRange)
         setRates(formattedData)
         setStats(calculateStats(formattedData))
       })
-    }
+      .catch((error) => {
+        console.error('Error fetching funding rates batch:', error)
+        setRates([])
+        setStats([])
+      })
   }, [selectedPairs, dateRange, calculateStats])
 
   useEffect(() => {

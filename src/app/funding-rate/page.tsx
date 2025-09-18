@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { getTickers, getFundingRates, getCollateralTickers } from '@/lib/kraken'
+import { getTickers, getFundingRates, getFundingRatesBatch, getCollateralTickers } from '@/lib/kraken'
 import { Ticker } from '@/types/kraken'
 import {
   Table,
@@ -145,63 +145,49 @@ export default function FundingRatePage() {
           .filter(ticker => ticker.tag === 'perpetual')
           //.filter(ticker => ticker.volumeQuote >= 1000) // 过滤掉交易量小于 1K 的交易对
 
-        // 并发受限地获取每个交易对的资金费率历史并计算所有时间周期的累积值
-        const limit = 10
-        const tasks = perpetualTickers.map((ticker) => async () => {
-            try {
-              const fundingResponse = await getFundingRates(ticker.symbol)
-              const now = Date.now()
+        const batchResponse = await getFundingRatesBatch(perpetualTickers.map((ticker) => ticker.symbol))
 
-              // 计算所有时间周期的累积资金费率
-              const fundingRates = Object.entries(timeRangeToHours).reduce((acc, [range, hours]) => {
-                const startTime = now - hours * 60 * 60 * 1000
-
-                // 过滤出指定时间范围内的费率数据
-                const relevantRates = fundingResponse.rates.filter(
-                  rate => new Date(rate.timestamp).getTime() >= startTime
-                )
-
-                // 计算累积资金费率
-                const cumulativeRate = relevantRates.reduce(
-                  (sum, rate) => sum + rate.relativeFundingRate,
-                  0
-                )
-
-                return {
-                  ...acc,
-                  [range]: cumulativeRate
-                }
-              }, {} as { [key: string]: number })
-
-              return {
-                ...ticker,
-                fundingRates
-              }
-            } catch (error) {
-              console.error(`Error fetching funding rates for ${ticker.symbol}:`, error)
-              return {
-                ...ticker,
-                fundingRates: Object.keys(timeRangeToHours).reduce((acc, range) => ({
-                  ...acc,
-                  [range]: 0
-                }), {})
-              }
-            }
+        if (batchResponse.errors) {
+          Object.entries(batchResponse.errors).forEach(([symbol, message]) => {
+            console.warn(`Failed to fetch funding rates for ${symbol}: ${message}`)
           })
-        const runWithLimit = async <T,>(fns: (() => Promise<T>)[], concurrency: number) => {
-          const results: T[] = new Array(fns.length)
-          let index = 0
-          const workers = new Array(Math.min(concurrency, fns.length)).fill(0).map(async () => {
-            while (true) {
-              const current = index++
-              if (current >= fns.length) break
-              results[current] = await fns[current]()
-            }
-          })
-          await Promise.all(workers)
-          return results
         }
-        const tickersWithFunding = await runWithLimit(tasks, limit)
+
+        const now = Date.now()
+        const tickersWithFunding = perpetualTickers.map((ticker) => {
+          const rates = batchResponse.ratesBySymbol[ticker.symbol] ?? []
+
+          const fundingRates = Object.entries(timeRangeToHours).reduce((acc, [range, hours]) => {
+            const startTime = now - hours * 60 * 60 * 1000
+
+            const relevantRates = rates.filter(
+              rate => new Date(rate.timestamp).getTime() >= startTime
+            )
+
+            const cumulativeRate = relevantRates.reduce(
+              (sum, rate) => sum + rate.relativeFundingRate,
+              0
+            )
+
+            return {
+              ...acc,
+              [range]: cumulativeRate
+            }
+          }, {} as { [key: string]: number })
+
+          if (rates.length === 0) {
+            Object.keys(timeRangeToHours).forEach((range) => {
+              if (!(range in fundingRates)) {
+                fundingRates[range] = 0
+              }
+            })
+          }
+
+          return {
+            ...ticker,
+            fundingRates
+          }
+        })
 
         setTickers(tickersWithFunding)
       } catch (error) {
