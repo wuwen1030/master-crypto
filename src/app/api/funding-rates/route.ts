@@ -1,9 +1,5 @@
 import { NextResponse } from 'next/server'
-import { startOfHour, isSameHour } from 'date-fns'
-
-// 创建一个缓存 Map，key 是 symbol，value 是 { data: unknown, timestamp: Date }
-const cache = new Map<string, { data: unknown; timestamp: Date }>()
-const MAX_CACHE_ENTRIES = 500
+import { fetchFundingRatesForSymbol } from '@/server/fundingRates'
 
 export async function GET(request: Request) {
   try {
@@ -14,36 +10,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Symbol is required' }, { status: 400 })
     }
 
-    // 检查缓存
-    const cachedData = cache.get(symbol)
-    const now = new Date()
-    
-    // 如果缓存存在且在同一个整点内，直接返回缓存数据
-    if (cachedData && isSameHour(cachedData.timestamp, now)) {
-      return NextResponse.json(cachedData.data)
-    }
+    const data = await fetchFundingRatesForSymbol(symbol)
 
-    // 如果没有缓存或不在同一个整点，则从 Kraken API 获取数据
-    const response = await fetch(
-      `https://futures.kraken.com/derivatives/api/v4/historicalfundingrates?symbol=${symbol}`
-    )
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-    
-    const data = await response.json()
-
-    // 更新缓存，使用当前整点的时间戳，并做简单的容量控制（FIFO）
-    cache.set(symbol, {
-      data,
-      timestamp: startOfHour(now),
-    })
-    if (cache.size > MAX_CACHE_ENTRIES) {
-      const oldestKey = cache.keys().next().value
-      if (oldestKey) cache.delete(oldestKey)
-    }
-    
     return NextResponse.json(data)
   } catch (error) {
     console.error('Funding rates fetch error:', error)

@@ -43,4 +43,11 @@ export interface FundingRateResponse {
   result: string
   serverTime: string
   rates: FundingRate[]
-} 
+}
+
+export interface FundingRatesBatchResponse {
+  result: 'success' | 'partial' | 'error'
+  serverTime: string
+  ratesBySymbol: Record<string, FundingRate[]>
+  errors?: Record<string, string>
+}
