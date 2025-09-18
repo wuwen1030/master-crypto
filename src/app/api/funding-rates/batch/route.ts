@@ -5,15 +5,17 @@ import { FundingRatesBatchResponse } from '@/types/kraken'
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => null)
-    const symbols = Array.isArray(body?.symbols) ? body.symbols : []
+    const rawSymbols = body?.symbols
 
-    if (symbols.length === 0) {
+    if (!Array.isArray(rawSymbols) || rawSymbols.length === 0) {
       return NextResponse.json({ error: 'symbols array is required' }, { status: 400 })
     }
 
-    if (!symbols.every((symbol) => typeof symbol === 'string')) {
+    if (!rawSymbols.every((symbol): symbol is string => typeof symbol === 'string')) {
       return NextResponse.json({ error: 'symbols must be strings' }, { status: 400 })
     }
+
+    const symbols = rawSymbols
 
     const { ratesBySymbol, errors } = await fetchFundingRatesBatch(symbols)
     const hasErrors = Object.keys(errors).length > 0
