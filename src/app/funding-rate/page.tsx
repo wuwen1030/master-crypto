@@ -90,7 +90,7 @@ type SortField = 'symbol' | 'fundingRate' | 'volume'
 type SortOrder = 'asc' | 'desc'
 
 export default function FundingRatePage() {
-  const [timeRange, setTimeRange] = useState('24h')
+  const [timeRange, setTimeRange] = useState('1d')
   const [tickers, setTickers] = useState<TickerWithFunding[]>([])
   const [loading, setLoading] = useState(true)
   const [completedTickers, setCompletedTickers] = useState(0)
