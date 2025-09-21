@@ -87,6 +87,8 @@ export default function FundingRatePage() {
   const [timeRange, setTimeRange] = useState('24h')
   const [tickers, setTickers] = useState<TickerWithFunding[]>([])
   const [loading, setLoading] = useState(true)
+  const [completedTickers, setCompletedTickers] = useState(0)
+  const [totalTickers, setTotalTickers] = useState(0)
   const [sortField, setSortField] = useState<SortField>('fundingRate')
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null)
@@ -139,11 +141,14 @@ export default function FundingRatePage() {
           getTickers(),
           getCollateralTickers()
         ])
-        
+
         setCollateralTickers(collateralResponse.tickers)
         const perpetualTickers = tickersResponse.tickers
           .filter(ticker => ticker.tag === 'perpetual')
           //.filter(ticker => ticker.volumeQuote >= 1000) // 过滤掉交易量小于 1K 的交易对
+
+        setCompletedTickers(0)
+        setTotalTickers(perpetualTickers.length)
 
         // 并发受限地获取每个交易对的资金费率历史并计算所有时间周期的累积值
         const limit = 10
@@ -196,6 +201,7 @@ export default function FundingRatePage() {
               const current = index++
               if (current >= fns.length) break
               results[current] = await fns[current]()
+              setCompletedTickers(prev => prev + 1)
             }
           })
           await Promise.all(workers)
@@ -322,7 +328,9 @@ export default function FundingRatePage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={3} className="text-center">Loading... (Please wait, data is being processed)</TableCell>
+                <TableCell colSpan={3} className="text-center">
+                  {`Loading... (Processing data, completed ${completedTickers}/${totalTickers || 0} tickers)`}
+                </TableCell>
               </TableRow>
             ) : sortedTickers.length === 0 ? (
               <TableRow>
