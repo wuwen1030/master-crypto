@@ -1,30 +1,35 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+} from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { Search, Heart, Shield } from "lucide-react";
+import {
+  ColumnDef,
+  PaginationState,
+  getCoreRowModel,
+  getPaginationRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+
 import { useFavorites } from "@/hooks/useFavorites";
 import { useSession } from "@/hooks/useSession";
 import { Ticker } from "@/types/kraken";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DataTable } from "@/components/ui/data-table";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-import { usePathname, useRouter } from "next/navigation";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface SymbolData {
   id: number;
@@ -36,63 +41,64 @@ interface SymbolData {
 
 const ITEMS_PER_PAGE = 50;
 
+type FavoriteFilter = "all" | "favorite" | "nonFavorite";
+type CollateralFilter = "all" | "collateral" | "nonCollateral";
+
 export default function SymbolsPage() {
   const [symbols, setSymbols] = useState<SymbolData[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [favoriteFilter, setFavoriteFilter] = useState<FavoriteFilter>("all");
+  const [collateralFilter, setCollateralFilter] =
+    useState<CollateralFilter>("all");
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: ITEMS_PER_PAGE,
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  // 使用统一的收藏管理 Hook
-  const { favorites, isFavorite, toggleFavorite } = useFavorites();
-  const { user } = useSession();
+
   const router = useRouter();
   const pathname = usePathname();
+  const { favorites, isFavorite, toggleFavorite } = useFavorites();
+  const { user } = useSession();
 
-
-
-  // 获取数据
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        // 并行获取两个 API 的数据
         const [tickersResponse, collateralResponse] = await Promise.all([
-          fetch('/api/tickers'),
-          fetch('/api/collateral-tickers')
+          fetch("/api/tickers"),
+          fetch("/api/collateral-tickers"),
         ]);
 
         if (!tickersResponse.ok || !collateralResponse.ok) {
-          throw new Error('Failed to fetch data');
+          throw new Error("Failed to fetch data");
         }
 
         const tickersData = await tickersResponse.json();
         const collateralData = await collateralResponse.json();
-
-        // 创建 collateral set 用于快速查找
         const collateralSet = new Set(collateralData.tickers || []);
 
-        // 处理 tickers 数据
-        const processedSymbols: SymbolData[] = tickersData.tickers?.map((ticker: Ticker, index: number) => {
-          const symbol = ticker.symbol;
-          // 将 PF_BTCUSD 转换为 BTC
-          const displayName = ticker.pair.split(':')[0];
-          
-          return {
-            id: index + 1,
-            symbol,
-            displayName,
-            isFavorite: false, // 稍后会根据 favorites 更新
-            isCollateral: collateralSet.has(symbol)
-          };
-        }) || [];
+        const processedSymbols: SymbolData[] =
+          tickersData.tickers?.map((ticker: Ticker, index: number) => {
+            const symbol = ticker.symbol;
+            const displayName = ticker.pair.split(":")[0];
+
+            return {
+              id: index + 1,
+              symbol,
+              displayName,
+              isFavorite: false,
+              isCollateral: collateralSet.has(symbol),
+            };
+          }) || [];
 
         setSymbols(processedSymbols);
-      } catch (error) {
-        console.error('Error fetching symbols:', error);
-        setError('Failed to load symbols. Please try again.');
+      } catch (caughtError) {
+        console.error("Error fetching symbols:", caughtError);
+        setError("Failed to load symbols. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -101,64 +107,212 @@ export default function SymbolsPage() {
     fetchData();
   }, []);
 
-  // 更新 symbols 的收藏状态
   useEffect(() => {
-    setSymbols(prevSymbols => 
-      prevSymbols.map(symbol => ({
+    setSymbols((previous) =>
+      previous.map((symbol) => ({
         ...symbol,
-        isFavorite: isFavorite(symbol.symbol)
+        isFavorite: isFavorite(symbol.symbol),
       }))
     );
   }, [favorites, isFavorite]);
 
-  // 过滤和分页逻辑
-  const filteredSymbols = useMemo(() => {
-    if (!searchTerm) return symbols;
-    
-    const term = searchTerm.toLowerCase();
-    return symbols.filter(symbol => 
-      symbol.symbol.toLowerCase().includes(term) ||
-      symbol.displayName.toLowerCase().includes(term)
-    );
-  }, [symbols, searchTerm]);
-
-  // 重置页码当搜索条件改变时
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm]);
-
-  // 分页数据
-  const paginatedSymbols = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredSymbols.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [filteredSymbols, currentPage]);
-
-  const totalPages = Math.ceil(filteredSymbols.length / ITEMS_PER_PAGE);
-
-  // 切换 collateral 状态（乐观更新）
-  const toggleCollateral = async (symbol: string, fromState: boolean) => {
-    // 乐观更新
-    setSymbols(prev => prev.map(s => s.symbol === symbol ? { ...s, isCollateral: !fromState } : s))
-    try {
-      if (fromState) {
-        const res = await fetch(`/api/collateral-tickers?symbol=${encodeURIComponent(symbol)}`, { method: 'DELETE' })
-        if (!res.ok) throw new Error('Failed to remove collateral')
-      } else {
-        const res = await fetch('/api/collateral-tickers', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ symbol }),
-        })
-        if (!res.ok) throw new Error('Failed to add collateral')
+  const handleFavoriteToggle = useCallback(
+    (symbol: string) => {
+      if (!user) {
+        router.push(
+          `/login?redirect=${encodeURIComponent(pathname || "/symbols")}`
+        );
+        return;
       }
-    } catch (e) {
-      // 回滚
-      setSymbols(prev => prev.map(s => s.symbol === symbol ? { ...s, isCollateral: fromState } : s))
-      console.error(e)
-    }
-  }
 
-  // 重试加载
+      toggleFavorite(symbol);
+    },
+    [pathname, router, toggleFavorite, user]
+  );
+
+  const handleCollateralToggle = useCallback(
+    async (symbol: string, currentState: boolean) => {
+      setSymbols((previous) =>
+        previous.map((item) =>
+          item.symbol === symbol
+            ? { ...item, isCollateral: !currentState }
+            : item
+        )
+      );
+
+      try {
+        if (currentState) {
+          const response = await fetch(
+            `/api/collateral-tickers?symbol=${encodeURIComponent(symbol)}`,
+            { method: "DELETE" }
+          );
+          if (!response.ok) {
+            throw new Error("Failed to remove collateral");
+          }
+        } else {
+          const response = await fetch("/api/collateral-tickers", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ symbol }),
+          });
+          if (!response.ok) {
+            throw new Error("Failed to add collateral");
+          }
+        }
+      } catch (caughtError) {
+        setSymbols((previous) =>
+          previous.map((item) =>
+            item.symbol === symbol
+              ? { ...item, isCollateral: currentState }
+              : item
+          )
+        );
+        console.error(caughtError);
+      }
+    },
+    []
+  );
+
+  const filteredSymbols = useMemo(() => {
+    let current = symbols;
+
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      current = current.filter(
+        (item) =>
+          item.symbol.toLowerCase().includes(term) ||
+          item.displayName.toLowerCase().includes(term)
+      );
+    }
+
+    if (favoriteFilter === "favorite") {
+      current = current.filter((item) => item.isFavorite);
+    } else if (favoriteFilter === "nonFavorite") {
+      current = current.filter((item) => !item.isFavorite);
+    }
+
+    if (collateralFilter === "collateral") {
+      current = current.filter((item) => item.isCollateral);
+    } else if (collateralFilter === "nonCollateral") {
+      current = current.filter((item) => !item.isCollateral);
+    }
+
+    return current;
+  }, [symbols, searchTerm, favoriteFilter, collateralFilter]);
+
+  useEffect(() => {
+    setPagination((previous) => ({ ...previous, pageIndex: 0 }));
+  }, [searchTerm, favoriteFilter, collateralFilter, filteredSymbols.length]);
+
+  const columns = useMemo<ColumnDef<SymbolData>[]>(
+    () => [
+      {
+        accessorKey: "id",
+        header: "No.",
+        cell: ({ row }) => (
+          <span className="font-mono text-sm">{row.original.id}</span>
+        ),
+      },
+      {
+        accessorKey: "symbol",
+        header: "Symbol",
+        cell: ({ row }) => (
+          <span className="font-mono">{row.original.symbol}</span>
+        ),
+      },
+      {
+        accessorKey: "displayName",
+        header: "Name",
+        cell: ({ row }) => (
+          <span className="font-semibold">{row.original.displayName}</span>
+        ),
+      },
+      {
+        id: "favorite",
+        header: "Favorite",
+        cell: ({ row }) => (
+          <div className="flex justify-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleFavoriteToggle(row.original.symbol)}
+              className="h-8 w-8 p-0"
+            >
+              <Heart
+                className={`h-4 w-4 ${
+                  row.original.isFavorite
+                    ? "fill-red-500 text-red-500"
+                    : "text-muted-foreground hover:text-red-500"
+                }`}
+              />
+            </Button>
+          </div>
+        ),
+        enableSorting: false,
+      },
+      {
+        id: "collateral",
+        header: "Collateral",
+        cell: ({ row }) => (
+          <div className="flex justify-center">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() =>
+                handleCollateralToggle(
+                  row.original.symbol,
+                  row.original.isCollateral
+                )
+              }
+              className="h-8 w-8 p-0"
+              title={
+                row.original.isCollateral
+                  ? "Remove from collateral"
+                  : "Add to collateral"
+              }
+            >
+              <Shield
+                className={`h-4 w-4 ${
+                  row.original.isCollateral
+                    ? "fill-emerald-500 text-emerald-500"
+                    : "text-muted-foreground hover:text-emerald-500"
+                }`}
+              />
+            </Button>
+          </div>
+        ),
+        enableSorting: false,
+      },
+    ],
+    [handleCollateralToggle, handleFavoriteToggle]
+  );
+
+  const table = useReactTable<SymbolData>({
+    data: filteredSymbols,
+    columns,
+    state: { pagination },
+    onPaginationChange: setPagination,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+  });
+
+  const emptyMessage = useMemo(() => {
+    if (!symbols.length) {
+      return "No symbols available.";
+    }
+
+    if (searchTerm || favoriteFilter !== "all" || collateralFilter !== "all") {
+      return "No symbols found with the current filters.";
+    }
+
+    return "No results.";
+  }, [
+    collateralFilter,
+    favoriteFilter,
+    searchTerm,
+    symbols.length,
+  ]);
+
   const handleRetry = () => {
     window.location.reload();
   };
@@ -176,8 +330,8 @@ export default function SymbolsPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {[...Array(10)].map((_, i) => (
-                <div key={i} className="h-12 bg-muted animate-pulse rounded-md" />
+              {[...Array(10)].map((_, index) => (
+                <div key={index} className="h-12 bg-muted animate-pulse rounded-md" />
               ))}
             </div>
           </CardContent>
@@ -201,171 +355,69 @@ export default function SymbolsPage() {
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">
-      {/* 搜索框 */}
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search symbols..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-8"
-          />
+      <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search symbols..."
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+              className="pl-8"
+            />
+          </div>
+          {searchTerm && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSearchTerm("")}
+            >
+              Clear
+            </Button>
+          )}
         </div>
-        {searchTerm && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSearchTerm('')}
+
+        <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-end">
+          <Select
+            value={favoriteFilter}
+            onValueChange={(value) =>
+              setFavoriteFilter(value as FavoriteFilter)
+            }
           >
-            Clear
-          </Button>
-        )}
+            <SelectTrigger className="sm:w-48">
+              <SelectValue placeholder="Favorite filter" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Favorites</SelectItem>
+              <SelectItem value="favorite">Favorites only</SelectItem>
+              <SelectItem value="nonFavorite">Non-favorites</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={collateralFilter}
+            onValueChange={(value) =>
+              setCollateralFilter(value as CollateralFilter)
+            }
+          >
+            <SelectTrigger className="sm:w-48">
+              <SelectValue placeholder="Collateral filter" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Collateral</SelectItem>
+              <SelectItem value="collateral">Collateral only</SelectItem>
+              <SelectItem value="nonCollateral">Non-collateral</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
-      {/* Symbol 表格 */}
       <Card>
         <CardHeader>
           <CardTitle>Symbols</CardTitle>
         </CardHeader>
         <CardContent>
-          {filteredSymbols.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              {searchTerm ? 'No symbols found matching your search.' : 'No symbols available.'}
-            </div>
-          ) : (
-            <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-20">No.</TableHead>
-                    <TableHead>Symbol</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead className="text-center">Favorite</TableHead>
-                    <TableHead className="text-center">Collateral</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedSymbols.map((symbol) => (
-                    <TableRow key={symbol.symbol}>
-                      <TableCell className="font-mono text-sm">
-                        {symbol.id}
-                      </TableCell>
-                      <TableCell className="font-mono">
-                        {symbol.symbol}
-                      </TableCell>
-                      <TableCell className="font-semibold">
-                        {symbol.displayName}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            if (!user) {
-                              router.push(`/login?redirect=${encodeURIComponent(pathname || '/symbols')}`)
-                              return
-                            }
-                            toggleFavorite(symbol.symbol)
-                          }}
-                          className="h-8 w-8 p-0"
-                        >
-                          <Heart
-                            className={`h-4 w-4 ${
-                              symbol.isFavorite
-                                ? 'fill-red-500 text-red-500'
-                                : 'text-muted-foreground hover:text-red-500'
-                            }`}
-                          />
-                        </Button>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleCollateral(symbol.symbol, symbol.isCollateral)}
-                          className="h-8 w-8 p-0"
-                          title={symbol.isCollateral ? 'Remove from collateral' : 'Add to collateral'}
-                        >
-                          <Shield
-                            className={`h-4 w-4 ${
-                              symbol.isCollateral
-                                ? 'fill-emerald-500 text-emerald-500'
-                                : 'text-muted-foreground hover:text-emerald-500'
-                            }`}
-                          />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-
-              {/* 分页 */}
-              {totalPages > 1 && (
-                <div className="mt-4">
-                  <Pagination>
-                    <PaginationContent>
-                      <PaginationItem>
-                        <PaginationPrevious
-                          href="#"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            if (currentPage > 1) {
-                              setCurrentPage(currentPage - 1);
-                            }
-                          }}
-                          className={currentPage <= 1 ? 'pointer-events-none opacity-50' : ''}
-                        />
-                      </PaginationItem>
-                      
-                      {/* 页码显示逻辑 */}
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        let pageNumber;
-                        if (totalPages <= 5) {
-                          pageNumber = i + 1;
-                        } else if (currentPage <= 3) {
-                          pageNumber = i + 1;
-                        } else if (currentPage >= totalPages - 2) {
-                          pageNumber = totalPages - 4 + i;
-                        } else {
-                          pageNumber = currentPage - 2 + i;
-                        }
-
-                        return (
-                          <PaginationItem key={pageNumber}>
-                            <PaginationLink
-                              href="#"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                setCurrentPage(pageNumber);
-                              }}
-                              isActive={pageNumber === currentPage}
-                            >
-                              {pageNumber}
-                            </PaginationLink>
-                          </PaginationItem>
-                        );
-                      })}
-
-                      <PaginationItem>
-                        <PaginationNext
-                          href="#"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            if (currentPage < totalPages) {
-                              setCurrentPage(currentPage + 1);
-                            }
-                          }}
-                          className={currentPage >= totalPages ? 'pointer-events-none opacity-50' : ''}
-                        />
-                      </PaginationItem>
-                    </PaginationContent>
-                  </Pagination>
-                </div>
-              )}
-            </>
-          )}
+          <DataTable table={table} emptyMessage={emptyMessage} />
         </CardContent>
       </Card>
     </div>
