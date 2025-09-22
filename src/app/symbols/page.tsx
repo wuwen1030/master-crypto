@@ -82,18 +82,21 @@ export default function SymbolsPage() {
         const collateralSet = new Set(collateralData.tickers || []);
 
         const processedSymbols: SymbolData[] =
-          tickersData.tickers?.map((ticker: Ticker, index: number) => {
-            const symbol = ticker.symbol;
-            const displayName = ticker.pair.split(":")[0];
+          (tickersData.tickers ?? [])
+            .map((ticker: Ticker) => {
+              const symbol = ticker.symbol;
+              const displayName = ticker.pair.split(":")[0];
 
-            return {
-              id: index + 1,
-              symbol,
-              displayName,
-              isFavorite: false,
-              isCollateral: collateralSet.has(symbol),
-            };
-          }) || [];
+              return {
+                id: 0,
+                symbol,
+                displayName,
+                isFavorite: false,
+                isCollateral: collateralSet.has(symbol),
+              };
+            })
+            .sort((a, b) => a.displayName.localeCompare(b.displayName))
+            .map((item, index) => ({ ...item, id: index + 1 }));
 
         setSymbols(processedSymbols);
       } catch (caughtError) {
