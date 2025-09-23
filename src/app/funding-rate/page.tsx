@@ -288,7 +288,7 @@ export default function FundingRatePage() {
   }
 
   return (
-    <div className="px-4">
+    <div className="px-4 pb-4">
       <div className="flex flex-row items-center justify-between mb-6">
         <h1 className="text-xl md:text-2xl font-bold">Funding Rate Overview</h1>
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
