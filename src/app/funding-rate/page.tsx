@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 import { getTickers, getFundingRates, getCollateralTickers } from '@/lib/kraken'
 import { Ticker } from '@/types/kraken'
 import {
@@ -24,10 +25,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
+import { ArrowUpDown, ArrowUp, ArrowDown, Heart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { FundingRateChart } from '@/components/ui/line-chart'
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   Pagination,
   PaginationContent,
@@ -36,6 +36,8 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination"
+import { useFavorites } from '@/hooks/useFavorites'
+import { useSession } from '@/hooks/useSession'
 
 const timeOptions = [
   { value: '1h', label: '1 Hour' },
@@ -88,6 +90,8 @@ interface TickerWithFunding extends Ticker {
 
 type SortField = 'symbol' | 'fundingRate' | 'volume'
 type SortOrder = 'asc' | 'desc'
+type FavoriteFilter = 'all' | 'favorite' | 'nonFavorite'
+type CollateralFilter = 'all' | 'collateral' | 'nonCollateral'
 
 export default function FundingRatePage() {
   const [timeRange, setTimeRange] = useState('1d')
@@ -101,9 +105,14 @@ export default function FundingRatePage() {
   const [historicalRates, setHistoricalRates] = useState<{ dateTs: number; fundingRate: number }[]>([])
   const [showModal, setShowModal] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
-  const [showOnlyCollateral, setShowOnlyCollateral] = useState(false)
+  const [favoriteFilter, setFavoriteFilter] = useState<FavoriteFilter>('all')
+  const [collateralFilter, setCollateralFilter] = useState<CollateralFilter>('all')
   const [collateralTickers, setCollateralTickers] = useState<string[]>([])
   const itemsPerPage = 50
+  const { favorites, toggleFavorite } = useFavorites()
+  const { user } = useSession()
+  const router = useRouter()
+  const pathname = usePathname()
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -114,9 +123,25 @@ export default function FundingRatePage() {
     }
   }
 
-  const filteredTickers = showOnlyCollateral
-    ? tickers.filter(ticker => collateralTickers.includes(ticker.symbol))
-    : tickers
+  const filteredTickers = useMemo(() => {
+    const collateralSet = new Set(collateralTickers)
+
+    let result = tickers
+
+    if (collateralFilter === 'collateral') {
+      result = result.filter(ticker => collateralSet.has(ticker.symbol))
+    } else if (collateralFilter === 'nonCollateral') {
+      result = result.filter(ticker => !collateralSet.has(ticker.symbol))
+    }
+
+    if (favoriteFilter === 'favorite') {
+      result = result.filter(ticker => favorites.has(ticker.symbol))
+    } else if (favoriteFilter === 'nonFavorite') {
+      result = result.filter(ticker => !favorites.has(ticker.symbol))
+    }
+
+    return result
+  }, [tickers, collateralTickers, collateralFilter, favoriteFilter, favorites])
 
   const sortedTickers = [...filteredTickers].sort((a, b) => {
     let comparison = 0
@@ -138,6 +163,19 @@ export default function FundingRatePage() {
   const startIndex = (currentPage - 1) * itemsPerPage
   const endIndex = startIndex + itemsPerPage
   const currentTickers = sortedTickers.slice(startIndex, endIndex)
+
+  const handleFavoriteToggle = useCallback((symbol: string) => {
+    if (!user) {
+      router.push(`/login?redirect=${encodeURIComponent(pathname || '/funding-rate')}`)
+      return
+    }
+
+    toggleFavorite(symbol)
+  }, [pathname, router, toggleFavorite, user])
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [favoriteFilter, collateralFilter])
 
   useEffect(() => {
     const fetchData = async () => {
@@ -253,22 +291,31 @@ export default function FundingRatePage() {
     <div className="px-4">
       <div className="flex flex-row items-center justify-between mb-6">
         <h1 className="text-xl md:text-2xl font-bold">Funding Rate Overview</h1>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="collateral"
-              checked={showOnlyCollateral}
-              onCheckedChange={(checked) => setShowOnlyCollateral(checked as boolean)}
-            />
-            <label
-              htmlFor="collateral"
-              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-            >
-              Show Collateral Only
-            </label>
-          </div>
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
+          <Select value={favoriteFilter} onValueChange={(value) => setFavoriteFilter(value as FavoriteFilter)}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Favorite filter" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Favorites: All</SelectItem>
+              <SelectItem value="favorite">Favorites: Only</SelectItem>
+              <SelectItem value="nonFavorite">Favorites: None</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={collateralFilter} onValueChange={(value) => setCollateralFilter(value as CollateralFilter)}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Collateral filter" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Collateral: All</SelectItem>
+              <SelectItem value="collateral">Collateral: Only</SelectItem>
+              <SelectItem value="nonCollateral">Collateral: None</SelectItem>
+            </SelectContent>
+          </Select>
+
           <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-[120px] md:w-[180px]">
+            <SelectTrigger className="w-[140px] md:w-[180px]">
               <SelectValue placeholder="Select Time Range" />
             </SelectTrigger>
             <SelectContent>
@@ -334,13 +381,13 @@ export default function FundingRatePage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={3} className="text-center">
+                <TableCell colSpan={4} className="text-center">
                   {`Loading... (Processing data, completed ${completedTickers}/${totalTickers || 0} tickers)`}
                 </TableCell>
               </TableRow>
             ) : sortedTickers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} className="text-center">No data available</TableCell>
+                <TableCell colSpan={4} className="text-center">No data available</TableCell>
               </TableRow>
             ) : (
               currentTickers.map((ticker, index) => (
@@ -350,7 +397,27 @@ export default function FundingRatePage() {
                   onClick={() => handleRowClick(ticker.symbol)}
                 >
                   <TableCell>{startIndex + index + 1}</TableCell>
-                  <TableCell className="font-medium">{ticker.symbol.replace('PF_', '').replace('USD', '')}</TableCell>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          handleFavoriteToggle(ticker.symbol)
+                        }}
+                      >
+                        <Heart
+                          className={`h-4 w-4 ${favorites.has(ticker.symbol)
+                            ? 'fill-red-500 text-red-500'
+                            : 'text-muted-foreground hover:text-red-500'
+                          }`}
+                        />
+                      </Button>
+                      {ticker.symbol.replace('PF_', '').replace('USD', '')}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <span className={ticker.fundingRates[timeRange] >= 0 ? 'text-red-500' : 'text-green-500'}>
                       {(ticker.fundingRates[timeRange] * 100).toFixed(4)}%

@@ -392,9 +392,9 @@ export default function SymbolsPage() {
               <SelectValue placeholder="Favorite filter" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Favorites</SelectItem>
-              <SelectItem value="favorite">Favorites only</SelectItem>
-              <SelectItem value="nonFavorite">Non-favorites</SelectItem>
+              <SelectItem value="all">Favorites: All</SelectItem>
+              <SelectItem value="favorite">Favorites: Only</SelectItem>
+              <SelectItem value="nonFavorite">Favorites: None</SelectItem>
             </SelectContent>
           </Select>
 
@@ -408,9 +408,9 @@ export default function SymbolsPage() {
               <SelectValue placeholder="Collateral filter" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Collateral</SelectItem>
-              <SelectItem value="collateral">Collateral only</SelectItem>
-              <SelectItem value="nonCollateral">Non-collateral</SelectItem>
+              <SelectItem value="all">Collateral: All</SelectItem>
+              <SelectItem value="collateral">Collateral: Only</SelectItem>
+              <SelectItem value="nonCollateral">Collateral: None</SelectItem>
             </SelectContent>
           </Select>
         </div>
